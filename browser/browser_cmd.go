@@ -31,6 +31,7 @@ func makeCmdMap() (map[string]BrowserCmd, []BrowserCmd) {
 		BookmarkGotoCmd{},
 		BookmarkListCmd{},
 		BookmarkAddCurrentCmd{},
+		BookmarkAddLinkCmd{},
 		LessCmd{},
 		ReprintCmd{},
 		ExitCmd{},
@@ -45,6 +46,8 @@ func makeCmdMap() (map[string]BrowserCmd, []BrowserCmd) {
 
 	return cm, cmds
 }
+
+// TODO cache list cmd
 
 /*
 
@@ -309,6 +312,38 @@ func (c BookmarkAddCurrentCmd) Help() (words []string, desc string) {
 }
 
 type BookmarkAddLinkCmd struct{}
+
+func (c BookmarkAddLinkCmd) Do(b *Browser, args []string) error {
+	if len(args) == 0 {
+		return errors.New("must include link number")
+	}
+
+	i, err := strconv.Atoi(args[0])
+	if err != nil {
+		return errors.New("links are numbers")
+	}
+
+	p := b.GetCurrPage()
+	if i >= len(p.Links) || i < 0 {
+		return errors.New("invalid link number")
+	}
+
+	link := p.Links[i].URL
+	p.Links[i].Bookmarked = true
+
+	if !strings.HasPrefix(link, "gemini://") {
+		link = strings.TrimPrefix(link, "/")
+		link = strings.TrimSuffix(b.State.CurrURL, "/") + "/" + link
+	}
+
+	b.State.Data.Bookmarks = append(b.State.Data.Bookmarks, link)
+	fmt.Printf("added %s to bookmarks\n", link)
+	return nil
+}
+
+func (c BookmarkAddLinkCmd) Help() (words []string, desc string) {
+	return []string{"bmal"}, "Add a link from the page to your bookmarks"
+}
 
 type BookmarkDeleteCmd struct{}
 

@@ -17,9 +17,10 @@ type BrowserState struct {
 }
 
 type Link struct {
-	No      int
-	URL     string
-	Visited bool
+	No         int
+	URL        string
+	Visited    bool
+	Bookmarked bool
 }
 
 type Page struct {

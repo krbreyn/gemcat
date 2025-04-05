@@ -32,12 +32,7 @@ func DoLinks(gemtxt string, HistoryFunc func(url string) bool) (output string, l
 			}
 			b.WriteString("\n")
 
-			var visited bool
-			if HistoryFunc(url) {
-				visited = true
-			}
-
-			links = append(links, gemcat.Link{No: i, URL: url, Visited: visited})
+			links = append(links, gemcat.Link{No: i, URL: url, Visited: HistoryFunc(url)})
 			i++
 		} else {
 			b.WriteString(line + "\n")
@@ -73,7 +68,7 @@ func ColorGemtext(gemtxt string, links []gemcat.Link) string {
 		} else if strings.HasPrefix(line, "*") {
 			b.WriteString("\033[32m" + line + "\033[39m\n") // Green
 		} else if strings.HasPrefix(line, ">") {
-			b.WriteString("\033[33m" + line + "\033[39m\n") // Yellow
+			b.WriteString("\033[37m" + line + "\033[39m\n") // White
 		} else if strings.HasPrefix(line, "=>") {
 			if links == nil {
 				b.WriteString("\033[36m" + line + "\033[39m\n") // Cyan
