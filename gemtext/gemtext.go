@@ -8,7 +8,7 @@ import (
 	"github.com/krbreyn/gemcat"
 )
 
-func DoLinks(gemtxt string) (output string, links []gemcat.Link) {
+func DoLinks(gemtxt string, HistoryFunc func(url string) bool) (output string, links []gemcat.Link) {
 	scanner := bufio.NewScanner(strings.NewReader(gemtxt))
 
 	var b strings.Builder
@@ -32,7 +32,12 @@ func DoLinks(gemtxt string) (output string, links []gemcat.Link) {
 			}
 			b.WriteString("\n")
 
-			links = append(links, gemcat.Link{No: i, URL: url})
+			var visited bool
+			if HistoryFunc(url) {
+				visited = true
+			}
+
+			links = append(links, gemcat.Link{No: i, URL: url, Visited: visited})
 			i++
 		} else {
 			b.WriteString(line + "\n")

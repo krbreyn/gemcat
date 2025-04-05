@@ -2,8 +2,10 @@ package browser
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"slices"
+	"strings"
 
 	"github.com/krbreyn/gemcat"
 	"github.com/krbreyn/gemcat/gemtext"
@@ -24,9 +26,16 @@ func NewBrowser() *Browser {
 	return &Browser{IH: NewInputHandler()}
 }
 
-func (b *Browser) GotoURL(url string) error {
-	if !slices.Contains(b.State.Data.History, url) {
-		b.State.Data.History = append(b.State.Data.History, url)
+func (b *Browser) WasLinkVisited(url string) bool {
+	if !strings.HasPrefix(url, "gemini://") {
+		url = b.State.CurrURL + "/" + url
+	}
+	return slices.Contains(b.State.Data.History, url)
+}
+
+func (b *Browser) GotoURL(url *url.URL) error {
+	if !slices.Contains(b.State.Data.History, url.String()) {
+		b.State.Data.History = append(b.State.Data.History, url.String())
 	}
 
 	_, body, err := Fetch(url)
@@ -35,22 +44,22 @@ func (b *Browser) GotoURL(url string) error {
 		return err
 	}
 
-	b.State.CurrURL = url
+	b.State.CurrURL = url.String()
 
-	content, links := gemtext.DoLinks(body)
+	content, links := gemtext.DoLinks(body, b.WasLinkVisited)
 
 	if len(b.State.Stack) != 0 {
 		b.State.Pos++
 	}
 	if b.State.Pos == len(b.State.Stack) {
 		b.State.Stack = append(b.State.Stack, gemcat.Page{
-			URL:     url,
+			URL:     url.String(),
 			Content: content,
 			Links:   links,
 		})
 	} else {
 		b.State.Stack = append(b.State.Stack[:b.State.Pos], gemcat.Page{
-			URL:     url,
+			URL:     url.String(),
 			Content: content,
 			Links:   links,
 		})

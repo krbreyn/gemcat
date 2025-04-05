@@ -1,7 +1,10 @@
 package interactive
 
-import "fmt"
+import (
+	"fmt"
+	"net/url"
+)
 
-func RunTUI(URL string, isURL bool, loadLast bool) {
+func RunTUI(u *url.URL, isURL bool, loadLast bool) {
 	fmt.Println("Not yet implemented!")
 }

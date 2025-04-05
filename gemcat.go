@@ -15,6 +15,7 @@ type BrowserState struct {
 	Stack   []Page
 	Data    BrowserData
 }
+
 type Link struct {
 	No      int
 	URL     string
@@ -25,16 +26,6 @@ type Page struct {
 	URL     string
 	Content string
 	Links   []Link
-}
-
-func GetHostPath(url string) (host, path string) {
-	split := strings.SplitN(url, "/", 2)
-	if len(split) == 1 {
-		host, path = split[0], ""
-	} else {
-		host, path = split[0], split[1]
-	}
-	return host, path
 }
 
 func IsGeminiLink(url string) bool {

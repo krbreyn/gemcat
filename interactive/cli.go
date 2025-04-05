@@ -3,14 +3,17 @@ package interactive
 import (
 	"bufio"
 	"fmt"
+	"net/url"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/krbreyn/gemcat/browser"
 	"github.com/krbreyn/gemcat/data"
 )
 
-func RunCLI(URL string, isURL bool, loadLast bool) {
+func RunCLI(u *url.URL, isURL bool, loadLast bool) {
 	b := browser.NewBrowser()
 
 	state, err := data.LoadDataFile()
@@ -27,13 +30,21 @@ func RunCLI(URL string, isURL bool, loadLast bool) {
 	fmt.Println("welcome to gemcat\ntype help to see the available commands")
 
 	if isURL {
-		b.GotoURL(URL)
+		b.GotoURL(u)
 		fmt.Println(b.RenderOutput())
 	} else if loadLast {
 		fmt.Println(b.RenderOutput())
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigs
+		data.SaveDataFile(b.State)
+		os.Exit(0)
+	}()
 
 	for {
 		fmt.Print("> ")
@@ -45,9 +56,7 @@ func RunCLI(URL string, isURL bool, loadLast bool) {
 			break
 		}
 
-		text := scanner.Text()
-		cmd := strings.Fields(text)
-
+		cmd := strings.Fields(scanner.Text())
 		b.IH.HandleInput(b, cmd)
 	}
 }

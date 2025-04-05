@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 
@@ -37,24 +38,26 @@ func main() {
 	args := flag.Args()
 
 	var isURL bool
-	var URL string
+	var u *url.URL
 	if len(args) == 0 {
 		isURL = false
 	} else {
-		URL = args[0]
-		URL = strings.TrimPrefix(URL, "gemini://")
+		URL := args[0]
+		if !strings.HasPrefix(URL, "gemini://") {
+			URL = "gemini://" + URL
+		}
+		var err error
+		u, err = url.Parse(URL)
+		if err != nil {
+			fmt.Printf("url parse error: %v", err)
+			os.Exit(1)
+		}
 		isURL = true
 	}
 
-	if *tuiMode {
-		interactive.RunTUI(URL, isURL, *loadLast)
-		os.Exit(0)
-	}
-
-	switch *cliMode {
-	case false:
+	if !*cliMode && !*tuiMode {
 		if isURL {
-			_, body, err := browser.Fetch(URL)
+			_, body, err := browser.Fetch(u)
 			if err != nil {
 				fmt.Printf("error: %v\n", err)
 				os.Exit(1)
@@ -65,9 +68,15 @@ func main() {
 			fmt.Println("error: must include URL if not using interactive mode")
 			os.Exit(1)
 		}
+	}
 
-	case true:
-		interactive.RunCLI(URL, isURL, *loadLast)
+	if *cliMode {
+		interactive.RunCLI(u, isURL, *loadLast)
+		os.Exit(0)
+	}
+
+	if *tuiMode {
+		interactive.RunTUI(u, isURL, *loadLast)
 		os.Exit(0)
 	}
 }

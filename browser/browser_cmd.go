@@ -3,6 +3,7 @@ package browser
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -55,7 +56,17 @@ func (c GotoCmd) Do(b *Browser, args []string) error {
 		return errors.New("must include a link")
 	}
 
-	err := b.GotoURL(strings.TrimPrefix(args[0], "gemini://"))
+	link := args[0]
+	if strings.HasPrefix(link, "gemini://") {
+		link = "gemini://" + link
+	}
+
+	u, err := url.Parse(link)
+	if err != nil {
+		return err
+	}
+
+	err = b.GotoURL(u)
 	if err != nil {
 		return fmt.Errorf("err: %v", err)
 	}
@@ -66,22 +77,6 @@ func (c GotoCmd) Do(b *Browser, args []string) error {
 
 func (c GotoCmd) Help() (words []string, desc string) {
 	return []string{"goto", "gt"}, "Open and go to a Gemini link.\nUsage: gt [link]"
-}
-
-type LinkCmd struct{}
-
-func (c LinkCmd) Do(b *Browser, args []string) error {
-	if len(args) == 0 {
-		return errors.New("must include link number")
-	}
-
-	i, err := strconv.Atoi(args[0])
-	if err != nil {
-		return errors.New("links are numbers")
-	}
-
-	fmt.Println(b.GetCurrPage().Links[i].URL)
-	return nil
 }
 
 func (c LinkCmd) Help() (words []string, desc string) {
@@ -112,14 +107,17 @@ func (c GotoLinkCmd) Do(b *Browser, args []string) error {
 		return fmt.Errorf("cannot open link type of %s", link)
 	}
 
-	if strings.HasPrefix(link, "gemini://") {
-		link = strings.TrimPrefix(link, "gemini://")
-	} else {
+	if !strings.HasPrefix(link, "gemini://") {
 		link = strings.TrimPrefix(link, "/")
 		link = strings.TrimSuffix(b.State.CurrURL, "/") + "/" + link
 	}
 
-	err = b.GotoURL(link)
+	u, err := url.Parse(link)
+	if err != nil {
+		return err
+	}
+
+	err = b.GotoURL(u)
 	if err != nil {
 		return fmt.Errorf("err: %v", err)
 	}
@@ -161,6 +159,22 @@ func (c ForwardCmd) Help() (words []string, desc string) {
 	Info Commands
 
 */
+
+type LinkCmd struct{}
+
+func (c LinkCmd) Do(b *Browser, args []string) error {
+	if len(args) == 0 {
+		return errors.New("must include link number")
+	}
+
+	i, err := strconv.Atoi(args[0])
+	if err != nil {
+		return errors.New("links are numbers")
+	}
+
+	fmt.Println(b.GetCurrPage().Links[i].URL)
+	return nil
+}
 
 type LinksCmd struct{}
 

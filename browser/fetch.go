@@ -7,19 +7,28 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/krbreyn/gemcat"
 	"github.com/krbreyn/gemcat/data"
 	"github.com/krbreyn/gemcat/tofu"
 )
 
-func Fetch(url string) (status, body string, err error) {
-	host, path := gemcat.GetHostPath(url)
+func Fetch(url *url.URL) (status, body string, err error) {
 
 ifRedirect:
+	if url.Scheme != "gemini" {
+		return "", "", fmt.Errorf("only gemini connections are handled, got %s", url.String())
+	}
+
+	host, path := url.Host, url.Path
+
+	if strings.Contains(host, "//") {
+		strings.Replace(host, "//", "/", 1)
+	}
+
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: true,
 		VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
@@ -27,7 +36,7 @@ ifRedirect:
 		},
 	}
 
-	timeout := 10 * time.Second
+	timeout := 7 * time.Second
 	dialer := &net.Dialer{
 		Timeout: timeout,
 	}
@@ -75,10 +84,11 @@ ifRedirect:
 	}
 	// TODO integrate this function with browser to update history properly
 	if status_no == 30 || status_no == 31 {
-		new_url := strings.Fields(status)[1]
-		new_url = strings.TrimPrefix(new_url, "gemini://")
-		host, path = gemcat.GetHostPath(new_url)
-		fmt.Printf("Redirect: gemini://%s/%s\r\n", host, path)
+		new_url, err := url.Parse(strings.Fields(status)[1])
+		if err != nil {
+			return "", "", fmt.Errorf("redirect url parse error: %w", err)
+		}
+		fmt.Printf("Redirect: %s\r\n", new_url.String())
 		goto ifRedirect
 	}
 	if status_no != 20 {

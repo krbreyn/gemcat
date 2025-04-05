@@ -96,17 +96,12 @@ func getCacheDir() string {
 	return cache_path
 }
 
-func CacheGemFile(rawurl string, content []byte) error {
-	parsedURL, err := url.Parse(rawurl)
-	if err != nil {
-		return fmt.Errorf("cache error: invalid url: %w", err)
-	}
-
-	relativePath := NormalizeGemPath(parsedURL)
+func CacheGemFile(u *url.URL, content []byte) error {
+	relativePath := NormalizeGemPath(u)
 	fullPath := filepath.Join(getCacheDir(), relativePath)
 
 	dir := filepath.Dir(fullPath)
-	err = os.MkdirAll(dir, 0755)
+	err := os.MkdirAll(dir, 0755)
 	if err != nil {
 		return fmt.Errorf("cache error: failed to create cache subdir: %w", err)
 	}
@@ -123,18 +118,13 @@ func IsCacheMiss(err error) bool {
 	return strings.Contains(err.Error(), "cache miss")
 }
 
-func LoadFromCache(rawurl string) ([]byte, error) {
-	u, err := url.Parse(rawurl)
-	if err != nil {
-		return nil, fmt.Errorf("cache error: invalid URL: %w", err)
-	}
-
+func LoadFromCache(u *url.URL) ([]byte, error) {
 	fullPath := filepath.Join(getCacheDir(), NormalizeGemPath(u))
 
-	_, err = os.Stat(fullPath)
+	_, err := os.Stat(fullPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("cache miss: no cached file for %s", rawurl)
+			return nil, fmt.Errorf("cache miss: no cached file for %s", u.String())
 		}
 		return nil, fmt.Errorf("failed to stat cache file: %w", err)
 	}
@@ -147,12 +137,7 @@ func LoadFromCache(rawurl string) ([]byte, error) {
 	return content, nil
 }
 
-func IsCacheStale(rawurl string, maxAge time.Duration) (bool, error) {
-	u, err := url.Parse(rawurl)
-	if err != nil {
-		return false, fmt.Errorf("cache error: invalid URL: %w", err)
-	}
-
+func IsCacheStale(u *url.URL, maxAge time.Duration) (bool, error) {
 	fullPath := filepath.Join(getCacheDir(), NormalizeGemPath(u))
 
 	info, err := os.Stat(fullPath)
