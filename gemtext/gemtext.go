@@ -8,7 +8,7 @@ import (
 	"github.com/krbreyn/gemcat"
 )
 
-func DoLinks(gemtxt string, HistoryFunc func(url string) bool) (output string, links []gemcat.Link) {
+func DoLinks(gemtxt string, wasLinkVisited, isLinkBookmarked func(url string) bool) (output string, links []gemcat.Link) {
 	scanner := bufio.NewScanner(strings.NewReader(gemtxt))
 
 	var b strings.Builder
@@ -20,6 +20,7 @@ func DoLinks(gemtxt string, HistoryFunc func(url string) bool) (output string, l
 		if strings.HasPrefix(line, "=>") {
 			split := strings.Fields(line)
 			url, text := split[1], split[2:] // [0] = "=>"
+			fmt.Println(split[0], split[1], split[2])
 
 			b.WriteString("=> " + fmt.Sprintf("[%d] ", i))
 			if gemcat.IsGeminiLink(url) {
@@ -32,7 +33,7 @@ func DoLinks(gemtxt string, HistoryFunc func(url string) bool) (output string, l
 			}
 			b.WriteString("\n")
 
-			links = append(links, gemcat.Link{No: i, URL: url, Visited: HistoryFunc(url)})
+			links = append(links, gemcat.Link{No: i, URL: url, Visited: wasLinkVisited(url), Bookmarked: isLinkBookmarked(url)})
 			i++
 		} else {
 			b.WriteString(line + "\n")
@@ -74,7 +75,10 @@ func ColorGemtext(gemtxt string, links []gemcat.Link) string {
 				b.WriteString("\033[36m" + line + "\033[39m\n") // Cyan
 				continue
 			}
-			if links[i].Visited {
+
+			if links[i].Bookmarked {
+				b.WriteString("\033[33m" + line + "\033[39m\n") // Yellow
+			} else if links[i].Visited {
 				b.WriteString("\033[35m" + line + "\033[39m\n") // Magenta
 			} else {
 				b.WriteString("\033[36m" + line + "\033[39m\n") // Cyan

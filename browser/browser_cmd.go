@@ -243,6 +243,9 @@ func (c HistoryCmd) Help() (words []string, desc string) {
 	return []string{"history", "hs"}, "Print the history of visited pages."
 }
 
+// TODO
+type HistoryGotoCmd struct{}
+
 /*
 
 	Bookmark Commands
