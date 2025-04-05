@@ -65,6 +65,7 @@ func (ih *InputHandler) HandleInput(b *Browser, cmd []string) {
 func makeCmdMap() (map[string]BrowserCmd, []BrowserCmd) {
 	cm := make(map[string]BrowserCmd)
 	cmds := []BrowserCmd{
+		ReprintCmd{},
 		GotoCmd{},
 		LinkCmd{},
 		GotoLinkCmd{},
@@ -85,6 +86,17 @@ func makeCmdMap() (map[string]BrowserCmd, []BrowserCmd) {
 	}
 
 	return cm, cmds
+}
+
+type ReprintCmd struct{}
+
+func (c ReprintCmd) Do(b *Browser, args []string) error {
+	fmt.Println(b.RenderOutput())
+	return nil
+}
+
+func (c ReprintCmd) Help() (words []string, desc string) {
+	return []string{"reprint", "rp"}, "Reprint the current page's contents."
 }
 
 type GotoCmd struct{}

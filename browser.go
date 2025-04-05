@@ -29,7 +29,12 @@ type Browser struct {
 	CurrURL string
 	Pos     int
 	Stack   []Page
+	Data    Data
 	History []string
+}
+
+func NewBrowser() *Browser {
+	return &Browser{}
 }
 
 func (b *Browser) GotoURL(url string) error {
