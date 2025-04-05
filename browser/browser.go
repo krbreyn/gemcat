@@ -30,7 +30,6 @@ func (b *Browser) WasLinkVisited(url string) bool {
 	if !strings.HasPrefix(url, "gemini://") {
 		url = b.State.CurrURL + "/" + url
 	}
-	fmt.Println("checking", url)
 	return slices.Contains(b.State.Data.History, url)
 }
 
@@ -38,7 +37,6 @@ func (b *Browser) IsLinkBookmarked(url string) bool {
 	if !strings.HasPrefix(url, "gemini://") {
 		url = b.State.CurrURL + "/" + url
 	}
-	fmt.Println("checking", url)
 	return slices.Contains(b.State.Data.Bookmarks, url)
 }
 
