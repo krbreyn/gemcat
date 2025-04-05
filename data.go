@@ -188,27 +188,3 @@ func NormalizeGemPath(u *url.URL) string {
 	// Avoid any weird escaping issues
 	return filepath.Join(host, path)
 }
-
-func pathForURL(rawurl string) (full_path string, err error) {
-	host, path, err := parseURL(rawurl)
-	if err != nil {
-		return "", fmt.Errorf("invalid URL: %w", err)
-	}
-
-	return filepath.Join(getCacheDir(), host, path), nil
-}
-
-func parseURL(rawurl string) (host, path string, err error) {
-	parsedURL, err := url.Parse(rawurl)
-	if err != nil {
-		return "", "", fmt.Errorf("invalid URL: %w", err)
-	}
-
-	host = parsedURL.Host
-	path = parsedURL.Path
-	if path == "" || path == "/" {
-		path = "/index.gmi"
-	}
-
-	return host, path, nil
-}
