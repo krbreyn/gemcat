@@ -35,8 +35,6 @@ func RunCLI(URL string, isURL bool, loadLast bool) {
 
 	scanner := bufio.NewScanner(os.Stdin)
 
-	b.State.CurrURL = URL
-
 	for {
 		fmt.Print("> ")
 
