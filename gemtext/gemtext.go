@@ -1,12 +1,14 @@
-package main
+package gemtext
 
 import (
 	"bufio"
 	"fmt"
 	"strings"
+
+	"github.com/krbreyn/gemcat"
 )
 
-func DoLinks(gemtxt string) (output string, links []Link) {
+func DoLinks(gemtxt string) (output string, links []gemcat.Link) {
 	scanner := bufio.NewScanner(strings.NewReader(gemtxt))
 
 	var b strings.Builder
@@ -20,7 +22,7 @@ func DoLinks(gemtxt string) (output string, links []Link) {
 			url, text := split[1], split[2:] // [0] = "=>"
 
 			b.WriteString("=> " + fmt.Sprintf("[%d] ", i))
-			if isGeminiLink(url) {
+			if gemcat.IsGeminiLink(url) {
 				b.WriteString("(gemini) ")
 			} else {
 				b.WriteString("(unsupported) ")
@@ -30,7 +32,7 @@ func DoLinks(gemtxt string) (output string, links []Link) {
 			}
 			b.WriteString("\n")
 
-			links = append(links, Link{No: i, URL: url})
+			links = append(links, gemcat.Link{No: i, URL: url})
 			i++
 		} else {
 			b.WriteString(line + "\n")
@@ -40,7 +42,7 @@ func DoLinks(gemtxt string) (output string, links []Link) {
 	return b.String(), links
 }
 
-func ColorGemtext(gemtxt string, links []Link) string {
+func ColorGemtext(gemtxt string, links []gemcat.Link) string {
 	scanner := bufio.NewScanner(strings.NewReader(gemtxt))
 
 	var b strings.Builder

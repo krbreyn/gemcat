@@ -25,6 +25,7 @@ func main() {
 
 	if (len(os.Args) > 2 && os.Args[1] == "help") || *help {
 		fmt.Println("todo")
+		return
 	}
 
 	args := flag.Args()

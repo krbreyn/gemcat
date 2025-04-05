@@ -1,4 +1,4 @@
-package main
+package browser
 
 import (
 	"bufio"
@@ -10,16 +10,20 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/krbreyn/gemcat"
+	"github.com/krbreyn/gemcat/data"
+	"github.com/krbreyn/gemcat/tofu"
 )
 
 func Fetch(url string) (status, body string, err error) {
-	host, path := getHostPath(url)
+	host, path := gemcat.GetHostPath(url)
 
 ifRedirect:
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: true,
 		VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
-			return handleTOFU(rawCerts, host)
+			return tofu.HandleTOFU(rawCerts, host)
 		},
 	}
 
@@ -32,13 +36,13 @@ ifRedirect:
 		Config:    tlsConfig,
 	}
 
-	isStale, err := IsCacheStale(url, time.Hour*24)
+	isStale, err := data.IsCacheStale(url, time.Hour*24)
 	if err != nil {
 		return "", "", fmt.Errorf("cache error: %w\n", err)
 	}
 
 	if !isStale {
-		content, err := LoadFromCache(url)
+		content, err := data.LoadFromCache(url)
 		if err != nil {
 			return "", "", fmt.Errorf("cache error: %w\n", err)
 		} else {
@@ -73,7 +77,7 @@ ifRedirect:
 	if status_no == 30 || status_no == 31 {
 		new_url := strings.Fields(status)[1]
 		new_url = strings.TrimPrefix(new_url, "gemini://")
-		host, path = getHostPath(new_url)
+		host, path = gemcat.GetHostPath(new_url)
 		fmt.Printf("Redirect: gemini://%s/%s\r\n", host, path)
 		goto ifRedirect
 	}
@@ -92,7 +96,7 @@ ifRedirect:
 
 	content := b.String()
 
-	err = CacheGemFile(url, []byte(content))
+	err = data.CacheGemFile(url, []byte(content))
 	if err != nil {
 		return "", "", fmt.Errorf("cache err: %w", err)
 	}

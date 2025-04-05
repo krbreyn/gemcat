@@ -1,4 +1,4 @@
-package main
+package browser
 
 import (
 	"errors"
@@ -6,60 +6,13 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/krbreyn/gemcat"
 )
 
 type BrowserCmd interface {
-	Do(b *Browser, args []string) error
+	Do(s *Browser, args []string) error
 	Help() (words []string, desc string)
-}
-
-type InputHandler struct {
-	cmd_map  map[string]BrowserCmd
-	cmds     []BrowserCmd
-	help_cmd HelpCmd
-}
-
-func NewInputHandler() InputHandler {
-	cmd_map, cmds := makeCmdMap()
-	return InputHandler{cmd_map, cmds, HelpCmd{}}
-}
-
-func (ih *InputHandler) HandleInput(b *Browser, cmd []string) {
-	if len(cmd) == 0 {
-		return
-	}
-
-	opt := cmd[0]
-	var args []string
-	if len(cmd) > 1 {
-		args = cmd[1:]
-	}
-
-	if opt == "help" {
-		if len(args) != 0 {
-			if cmd, ok := ih.cmd_map[args[0]]; ok {
-				ih.help_cmd.Do([]BrowserCmd{cmd})
-			} else {
-				fmt.Printf("cmd %s does not exist\n", args[0])
-			}
-			return
-		}
-		ih.help_cmd.Do(ih.cmds)
-		return
-	}
-
-	if cmd, ok := ih.cmd_map[opt]; ok {
-		if len(args) != 0 && args[0] == "help" {
-			ih.help_cmd.Do([]BrowserCmd{cmd})
-			return
-		}
-		err := cmd.Do(b, args)
-		if err != nil {
-			fmt.Printf("error: %v\n", err)
-		}
-	} else {
-		fmt.Printf("error: cmd not recognized: %s\n", opt)
-	}
 }
 
 func makeCmdMap() (map[string]BrowserCmd, []BrowserCmd) {
@@ -159,7 +112,7 @@ func (c GotoLinkCmd) Do(b *Browser, args []string) error {
 	link := p.Links[i].URL
 	p.Links[i].Visited = true
 
-	if !isGeminiLink(link) {
+	if !gemcat.IsGeminiLink(link) {
 		return fmt.Errorf("cannot open link type of %s", link)
 	}
 
@@ -167,7 +120,7 @@ func (c GotoLinkCmd) Do(b *Browser, args []string) error {
 		link = strings.TrimPrefix(link, "gemini://")
 	} else {
 		link = strings.TrimPrefix(link, "/")
-		link = strings.TrimSuffix(b.CurrURL, "/") + "/" + link
+		link = strings.TrimSuffix(b.State.CurrURL, "/") + "/" + link
 	}
 
 	err = b.GotoURL(link)
@@ -186,7 +139,7 @@ func (c GotoLinkCmd) Help() (words []string, desc string) {
 type LinksCmd struct{}
 
 func (c LinksCmd) Do(b *Browser, args []string) error {
-	if len(b.Stack) == 0 {
+	if len(b.State.Stack) == 0 {
 		return errors.New("There are no links!")
 	}
 
@@ -208,13 +161,13 @@ func (c LinksCmd) Help() (words []string, desc string) {
 type StackCmd struct{}
 
 func (c StackCmd) Do(b *Browser, args []string) error {
-	if len(b.Stack) == 0 {
+	if len(b.State.Stack) == 0 {
 		fmt.Println("Your stack is empty!")
 		return nil
 	}
 
-	for i, p := range b.Stack {
-		if i == b.Pos {
+	for i, p := range b.State.Stack {
+		if i == b.State.Pos {
 			fmt.Print("-> ")
 		}
 		fmt.Println(i, p.URL)
@@ -229,12 +182,12 @@ func (c StackCmd) Help() (words []string, desc string) {
 type HistoryCmd struct{}
 
 func (c HistoryCmd) Do(b *Browser, args []string) error {
-	if len(b.History) == 0 {
+	if len(b.State.Data.History) == 0 {
 		fmt.Println("Your history is empty!")
 		return nil
 	}
 
-	for i, h := range b.History {
+	for i, h := range b.State.Data.History {
 		fmt.Println(i, h)
 	}
 	return nil

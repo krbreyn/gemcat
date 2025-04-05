@@ -1,4 +1,4 @@
-package main
+package data
 
 import (
 	"encoding/json"
@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/krbreyn/gemcat"
 )
 
 var xdg_data_home string = os.Getenv("XDG_DATA_HOME")
@@ -15,11 +17,6 @@ var xdg_data_home string = os.Getenv("XDG_DATA_HOME")
 const app_dir = "gemcat"
 const data_file = "browser_data"
 const cache_dir = "gemcache"
-
-type Data struct {
-	Bookmarks []string `json:"bookmarks"`
-	History   []string `json:"history"`
-}
 
 func getAppDir() string {
 	var base_data_dir string
@@ -47,8 +44,8 @@ func getDataFile() string {
 	)
 }
 
-func LoadDataFile() (Data, error) {
-	var data Data
+func LoadDataFile() (gemcat.BrowserData, error) {
+	var data gemcat.BrowserData
 	dataFile := getDataFile()
 
 	_, err := os.Stat(dataFile)
@@ -72,7 +69,7 @@ func LoadDataFile() (Data, error) {
 	return data, nil
 }
 
-func SaveDataFile(data Data) error {
+func SaveDataFile(data gemcat.BrowserData) error {
 	dataFile := getDataFile()
 
 	jsonBytes, err := json.MarshalIndent(data, "", "  ")

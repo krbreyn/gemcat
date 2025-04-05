@@ -1,4 +1,4 @@
-package main
+package tofu
 
 import (
 	"crypto/sha256"
@@ -13,7 +13,7 @@ import (
 
 const knownHostsFile = ".gemini-known-hosts"
 
-func handleTOFU(rawCerts [][]byte, hostname string) error {
+func HandleTOFU(rawCerts [][]byte, hostname string) error {
 	cert, err := x509.ParseCertificate(rawCerts[0])
 	if err != nil {
 		return err

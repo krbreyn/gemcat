@@ -1,24 +1,27 @@
-package main
+package interactive
 
 import (
 	"bufio"
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/krbreyn/gemcat/browser"
+	"github.com/krbreyn/gemcat/gemtext"
 )
 
 func RunCLI(URL string, isURL bool) {
-	var b Browser
+	b := browser.NewBrowser()
 
 	if isURL {
-		_, body, err := Fetch(URL)
+		_, body, err := browser.Fetch(URL)
 		if err != nil {
 			fmt.Printf("error: %v\n", err)
 			os.Exit(1)
 		}
 
-		content, links := DoLinks(body)
-		b.Stack = []Page{{URL: URL, Content: content, Links: links}}
+		content, links := gemtext.DoLinks(body)
+		b.State.Stack = []browser.Page{{URL: URL, Content: content, Links: links}}
 
 		fmt.Println(b.RenderOutput())
 	}
@@ -27,9 +30,7 @@ func RunCLI(URL string, isURL bool) {
 
 	scanner := bufio.NewScanner(os.Stdin)
 
-	b.CurrURL = URL
-
-	ih := NewInputHandler()
+	b.State.CurrURL = URL
 
 	for {
 		fmt.Print("> ")
@@ -44,6 +45,6 @@ func RunCLI(URL string, isURL bool) {
 		text := scanner.Text()
 		cmd := strings.Fields(text)
 
-		ih.HandleInput(&b, cmd)
+		b.IH.HandleInput(b, cmd)
 	}
 }
