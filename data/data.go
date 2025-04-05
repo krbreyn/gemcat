@@ -15,7 +15,7 @@ import (
 var xdg_data_home string = os.Getenv("XDG_DATA_HOME")
 
 const app_dir = "gemcat"
-const data_file = "browser_data"
+const data_file = "browser_state"
 const cache_dir = "gemcache"
 
 func getAppDir() string {
@@ -44,8 +44,8 @@ func getDataFile() string {
 	)
 }
 
-func LoadDataFile() (gemcat.BrowserData, error) {
-	var data gemcat.BrowserData
+func LoadDataFile() (gemcat.BrowserState, error) {
+	var data gemcat.BrowserState
 	dataFile := getDataFile()
 
 	_, err := os.Stat(dataFile)
@@ -69,7 +69,7 @@ func LoadDataFile() (gemcat.BrowserData, error) {
 	return data, nil
 }
 
-func SaveDataFile(data gemcat.BrowserData) error {
+func SaveDataFile(data gemcat.BrowserState) error {
 	dataFile := getDataFile()
 
 	jsonBytes, err := json.MarshalIndent(data, "", "  ")

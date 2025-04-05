@@ -6,12 +6,27 @@ import (
 	"os"
 	"strings"
 
+	"github.com/krbreyn/gemcat"
 	"github.com/krbreyn/gemcat/browser"
+	"github.com/krbreyn/gemcat/data"
 	"github.com/krbreyn/gemcat/gemtext"
 )
 
-func RunCLI(URL string, isURL bool) {
+func RunCLI(URL string, isURL bool, loadLast bool) {
 	b := browser.NewBrowser()
+
+	state, err := data.LoadDataFile()
+	if err != nil {
+		panic(err)
+	}
+
+	if loadLast {
+		b.State = state
+	} else {
+		b.State.Data = state.Data
+	}
+
+	fmt.Println("welcome to gemcat\ntype help to see the available commands")
 
 	if isURL {
 		_, body, err := browser.Fetch(URL)
@@ -21,12 +36,12 @@ func RunCLI(URL string, isURL bool) {
 		}
 
 		content, links := gemtext.DoLinks(body)
-		b.State.Stack = []browser.Page{{URL: URL, Content: content, Links: links}}
+		b.State.Stack = []gemcat.Page{{URL: URL, Content: content, Links: links}}
 
 		fmt.Println(b.RenderOutput())
+	} else if loadLast {
+		fmt.Println(b.RenderOutput())
 	}
-
-	fmt.Println("welcome to gemcat\ntype help to see the available commands")
 
 	scanner := bufio.NewScanner(os.Stdin)
 

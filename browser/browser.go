@@ -11,25 +11,12 @@ import (
 	"golang.org/x/term"
 )
 
-type Page struct {
-	URL     string
-	Content string
-	Links   []gemcat.Link
-}
-
-func (p Page) Render() string {
+func RenderPage(p gemcat.Page) string {
 	return gemtext.ColorGemtext(p.Content, p.Links)
 }
 
-type BrowserState struct {
-	CurrURL string
-	Pos     int
-	Stack   []Page
-	Data    gemcat.BrowserData
-}
-
 type Browser struct {
-	State BrowserState
+	State gemcat.BrowserState
 	IH    InputHandler
 }
 
@@ -56,13 +43,13 @@ func (b *Browser) GotoURL(url string) error {
 		b.State.Pos++
 	}
 	if b.State.Pos == len(b.State.Stack) {
-		b.State.Stack = append(b.State.Stack, Page{
+		b.State.Stack = append(b.State.Stack, gemcat.Page{
 			URL:     url,
 			Content: content,
 			Links:   links,
 		})
 	} else {
-		b.State.Stack = append(b.State.Stack[:b.State.Pos], Page{
+		b.State.Stack = append(b.State.Stack[:b.State.Pos], gemcat.Page{
 			URL:     url,
 			Content: content,
 			Links:   links,
@@ -72,7 +59,7 @@ func (b *Browser) GotoURL(url string) error {
 	return nil
 }
 
-func (b *Browser) GetCurrPage() Page {
+func (b *Browser) GetCurrPage() gemcat.Page {
 	return b.State.Stack[b.State.Pos]
 }
 
@@ -89,7 +76,7 @@ func (b *Browser) RenderCurrPage() string {
 	if len(b.State.Stack) == 0 {
 		return "You have no current page!"
 	}
-	return b.GetCurrPage().Render()
+	return RenderPage(b.GetCurrPage())
 }
 
 func (b *Browser) GoForward() {

@@ -12,14 +12,20 @@ import (
 )
 
 func main() {
-	interactiveMode := flag.Bool("i", false, "Interactive mode")
+	cliMode := flag.Bool("i", false, "CLI mode")
 	tuiMode := flag.Bool("t", false, "TUI mode")
+	loadLast := flag.Bool("ll", false, "Load last session")
 
 	help := flag.Bool("help", false, "Help")
 	flag.Parse()
 
-	if *tuiMode && *interactiveMode {
+	if *tuiMode && *cliMode {
 		fmt.Println("Pick only one!")
+		os.Exit(1)
+	}
+
+	if *loadLast && (!*cliMode && !*tuiMode) {
+		fmt.Println("'-ll' cannot be used outside of interactive mode!")
 		os.Exit(1)
 	}
 
@@ -41,11 +47,11 @@ func main() {
 	}
 
 	if *tuiMode {
-		interactive.RunTUI(URL, isURL)
+		interactive.RunTUI(URL, isURL, *loadLast)
 		os.Exit(0)
 	}
 
-	switch *interactiveMode {
+	switch *cliMode {
 	case false:
 		if isURL {
 			_, body, err := browser.Fetch(URL)
@@ -61,7 +67,7 @@ func main() {
 		}
 
 	case true:
-		interactive.RunCLI(URL, isURL)
+		interactive.RunCLI(URL, isURL, *loadLast)
 		os.Exit(0)
 	}
 }

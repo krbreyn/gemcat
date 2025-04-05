@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/krbreyn/gemcat"
+	"github.com/krbreyn/gemcat/data"
 )
 
 type BrowserCmd interface {
@@ -235,6 +236,7 @@ func (c LessCmd) Help() (words []string, desc string) {
 type ExitCmd struct{}
 
 func (c ExitCmd) Do(b *Browser, args []string) error {
+	data.SaveDataFile(b.State)
 	os.Exit(0)
 	return nil // should never happen
 }
