@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -69,35 +70,7 @@ func main() {
 
 		scanner := bufio.NewScanner(os.Stdin)
 
-		url := URL
-
-		gotoURL := func(url string) error {
-			host, path := getHostPath(url)
-			_, body, err := Fetch(host, path)
-			if err != nil {
-				fmt.Printf("err: %v\n", err)
-				return err
-			}
-
-			content, links := DoLinks(body)
-			if len(b.Stack) != 0 {
-				b.Pos++
-			}
-			if b.Pos == len(b.Stack) {
-				b.Stack = append(b.Stack, Page{
-					URL:     url,
-					Content: content,
-					Links:   links,
-				})
-			} else {
-				b.Stack = append(b.Stack[:b.Pos], Page{
-					URL:     url,
-					Content: content,
-					Links:   links,
-				})
-			}
-			return nil
-		}
+		b.CurrURL = URL
 
 		for {
 			fmt.Print("> ")
@@ -116,8 +89,7 @@ func main() {
 					fmt.Println("must include a link")
 					continue
 				}
-				url = strings.TrimPrefix(cmd[1], "gemini://")
-				err := gotoURL(url)
+				err := b.GotoURL(strings.TrimPrefix(cmd[1], "gemini://"))
 				if err != nil {
 					fmt.Printf("err: %v", err)
 					continue
@@ -161,12 +133,10 @@ func main() {
 					link = strings.TrimPrefix(link, "gemini://")
 				} else {
 					link = strings.TrimPrefix(link, "/")
-					url = strings.TrimSuffix(url, "/")
-					link = url + "/" + link
+					link = strings.TrimSuffix(b.CurrURL, "/") + "/" + link
 				}
 
-				url = link
-				err = gotoURL(url)
+				err = b.GotoURL(link)
 				if err != nil {
 					fmt.Printf("err: %v", err)
 					continue
@@ -176,7 +146,7 @@ func main() {
 
 			case "links":
 				for _, s := range b.Stack[b.Pos].Links {
-					fmt.Printf("%d %s\n", s.No, s.URL)
+					fmt.Println(s.No, s.URL)
 				}
 
 			case "stack":
@@ -184,20 +154,23 @@ func main() {
 					if i == b.Pos {
 						fmt.Print("-> ")
 					}
-					fmt.Printf("%d %s\n", i, p.URL)
+					fmt.Println(i, p.URL)
 				}
 
 			case "history":
+				for i, h := range b.History {
+					fmt.Println(i, h)
+				}
 
 			case "b", "back":
 				b.Pos--
-				url = b.Stack[b.Pos].URL
+				b.CurrURL = b.Stack[b.Pos].URL
 				p := b.Stack[b.Pos]
 				fmt.Println(ColorGemtext(p.Content, p.Links))
 
 			case "f", "forward":
 				b.Pos++
-				url = b.Stack[b.Pos].URL
+				b.CurrURL = b.Stack[b.Pos].URL
 				p := b.Stack[b.Pos]
 				fmt.Println(ColorGemtext(p.Content, p.Links))
 
@@ -211,9 +184,46 @@ func main() {
 }
 
 type Browser struct {
+	CurrURL string
 	Pos     int
 	Stack   []Page
 	History []string
+}
+
+func (b *Browser) GotoURL(url string) error {
+	host, path := getHostPath(url)
+	_, body, err := Fetch(host, path)
+	if err != nil {
+		fmt.Printf("err: %v\n", err)
+		return err
+	}
+
+	b.CurrURL = url
+
+	content, links := DoLinks(body)
+	if len(b.Stack) != 0 {
+		b.Pos++
+	}
+
+	if b.Pos == len(b.Stack) {
+		b.Stack = append(b.Stack, Page{
+			URL:     url,
+			Content: content,
+			Links:   links,
+		})
+	} else {
+		b.Stack = append(b.Stack[:b.Pos], Page{
+			URL:     url,
+			Content: content,
+			Links:   links,
+		})
+	}
+
+	if !slices.Contains(b.History, url) {
+		b.History = append(b.History, url)
+	}
+
+	return nil
 }
 
 type Page struct {
