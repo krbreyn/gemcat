@@ -72,8 +72,6 @@ func ColorGemtext(gemtxt string, links []Link) string {
 				b.WriteString("\033[36m" + line + "\033[39m\n") // Cyan
 				continue
 			}
-			split := strings.Fields(line)
-			fmt.Println(split)
 			if links[i].Visited {
 				b.WriteString("\033[35m" + line + "\033[39m\n") // Magenta
 			} else {

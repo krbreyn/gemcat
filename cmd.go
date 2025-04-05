@@ -147,6 +147,10 @@ func (c GotoLinkCmd) Do(b *Browser, args []string) error {
 	link := p.Links[i].URL
 	p.Links[i].Visited = true
 
+	if !isGeminiLink(link) {
+		return fmt.Errorf("cannot open link type of %s", link)
+	}
+
 	if strings.HasPrefix(link, "gemini://") {
 		link = strings.TrimPrefix(link, "gemini://")
 	} else {
