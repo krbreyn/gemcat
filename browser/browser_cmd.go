@@ -42,16 +42,11 @@ func makeCmdMap() (map[string]BrowserCmd, []BrowserCmd) {
 	return cm, cmds
 }
 
-type ReprintCmd struct{}
+/*
 
-func (c ReprintCmd) Do(b *Browser, args []string) error {
-	fmt.Println(b.RenderOutput())
-	return nil
-}
+	Navigation Commands
 
-func (c ReprintCmd) Help() (words []string, desc string) {
-	return []string{"reprint", "rp"}, "Reprint the current page's contents."
-}
+*/
 
 type GotoCmd struct{}
 
@@ -137,6 +132,36 @@ func (c GotoLinkCmd) Help() (words []string, desc string) {
 	return []string{"g"}, "Open and goto the specified link number on the current page.\nUsage: g [no]"
 }
 
+type BackCmd struct{}
+
+func (c BackCmd) Do(b *Browser, args []string) error {
+	b.GoBack()
+	fmt.Println(b.RenderOutput())
+	return nil
+}
+
+func (c BackCmd) Help() (words []string, desc string) {
+	return []string{"back", "b"}, "Go back one page."
+}
+
+type ForwardCmd struct{}
+
+func (c ForwardCmd) Do(b *Browser, args []string) error {
+	b.GoForward()
+	fmt.Println(b.RenderOutput())
+	return nil
+}
+
+func (c ForwardCmd) Help() (words []string, desc string) {
+	return []string{"forward", "fd", "f"}, "Go forward one page."
+}
+
+/*
+
+	Info Commands
+
+*/
+
 type LinksCmd struct{}
 
 func (c LinksCmd) Do(b *Browser, args []string) error {
@@ -198,29 +223,11 @@ func (c HistoryCmd) Help() (words []string, desc string) {
 	return []string{"history", "hs"}, "Print the history of visited pages."
 }
 
-type BackCmd struct{}
+/*
 
-func (c BackCmd) Do(b *Browser, args []string) error {
-	b.GoBack()
-	fmt.Println(b.RenderOutput())
-	return nil
-}
+	Misc Commands
 
-func (c BackCmd) Help() (words []string, desc string) {
-	return []string{"back", "b"}, "Go back one page."
-}
-
-type ForwardCmd struct{}
-
-func (c ForwardCmd) Do(b *Browser, args []string) error {
-	b.GoForward()
-	fmt.Println(b.RenderOutput())
-	return nil
-}
-
-func (c ForwardCmd) Help() (words []string, desc string) {
-	return []string{"forward", "fd", "f"}, "Go forward one page."
-}
+*/
 
 // TODO
 type LessCmd struct{}
@@ -231,6 +238,17 @@ func (c LessCmd) Do(b *Browser, args []string) error {
 
 func (c LessCmd) Help() (words []string, desc string) {
 	return []string{"less"}, "Will pipe the current page to less when implemented."
+}
+
+type ReprintCmd struct{}
+
+func (c ReprintCmd) Do(b *Browser, args []string) error {
+	fmt.Println(b.RenderOutput())
+	return nil
+}
+
+func (c ReprintCmd) Help() (words []string, desc string) {
+	return []string{"reprint", "rp"}, "Reprint the current page's contents."
 }
 
 type ExitCmd struct{}
@@ -250,6 +268,7 @@ type HelpCmd struct{}
 func (c HelpCmd) Do(cmds []BrowserCmd) {
 	for _, cmd := range cmds {
 		words, desc := cmd.Help()
+
 		fmt.Print("Command: ")
 		cap := len(words) - 1
 		for i, w := range words {

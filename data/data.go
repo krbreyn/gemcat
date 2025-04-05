@@ -99,7 +99,7 @@ func getCacheDir() string {
 func CacheGemFile(rawurl string, content []byte) error {
 	parsedURL, err := url.Parse(rawurl)
 	if err != nil {
-		return fmt.Errorf("cache error: invalud url: %w", err)
+		return fmt.Errorf("cache error: invalid url: %w", err)
 	}
 
 	relativePath := NormalizeGemPath(parsedURL)
