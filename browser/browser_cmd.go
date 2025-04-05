@@ -20,16 +20,19 @@ type BrowserCmd interface {
 func makeCmdMap() (map[string]BrowserCmd, []BrowserCmd) {
 	cm := make(map[string]BrowserCmd)
 	cmds := []BrowserCmd{
-		ReprintCmd{},
 		GotoCmd{},
-		LinkCmd{},
 		GotoLinkCmd{},
+		BackCmd{},
+		ForwardCmd{},
+		LinkCmd{},
 		LinksCmd{},
 		StackCmd{},
 		HistoryCmd{},
-		BackCmd{},
-		ForwardCmd{},
+		BookmarkGotoCmd{},
+		BookmarkListCmd{},
+		BookmarkAddCurrentCmd{},
 		LessCmd{},
+		ReprintCmd{},
 		ExitCmd{},
 	}
 
@@ -79,10 +82,6 @@ func (c GotoCmd) Help() (words []string, desc string) {
 	return []string{"goto", "gt"}, "Open and go to a Gemini link.\nUsage: gt [link]"
 }
 
-func (c LinkCmd) Help() (words []string, desc string) {
-	return []string{"link", "l"}, "Print the link of the corresponding link number from the current page.\nUsage: l [no]"
-}
-
 type GotoLinkCmd struct{}
 
 func (c GotoLinkCmd) Do(b *Browser, args []string) error {
@@ -127,7 +126,7 @@ func (c GotoLinkCmd) Do(b *Browser, args []string) error {
 }
 
 func (c GotoLinkCmd) Help() (words []string, desc string) {
-	return []string{"g"}, "Open and goto the specified link number on the current page.\nUsage: g [no]"
+	return []string{"gtl", "g"}, "Open and goto the specified link number on the current page.\nUsage: g [no]"
 }
 
 type BackCmd struct{}
@@ -174,6 +173,10 @@ func (c LinkCmd) Do(b *Browser, args []string) error {
 
 	fmt.Println(b.GetCurrPage().Links[i].URL)
 	return nil
+}
+
+func (c LinkCmd) Help() (words []string, desc string) {
+	return []string{"link", "l"}, "Print the link of the corresponding link number from the current page.\nUsage: l [no]"
 }
 
 type LinksCmd struct{}
@@ -236,6 +239,80 @@ func (c HistoryCmd) Do(b *Browser, args []string) error {
 func (c HistoryCmd) Help() (words []string, desc string) {
 	return []string{"history", "hs"}, "Print the history of visited pages."
 }
+
+/*
+
+	Bookmark Commands
+
+*/
+
+type BookmarkGotoCmd struct{}
+
+func (c BookmarkGotoCmd) Do(b *Browser, args []string) error {
+	if len(args) == 0 {
+		return errors.New("must include bookmark number")
+	}
+
+	i, err := strconv.Atoi(args[0])
+	if err != nil {
+		return errors.New("not a number!")
+	}
+
+	if i < 0 || i > len(b.State.Data.Bookmarks)-1 {
+		return errors.New("bookmark number is out of range")
+	}
+
+	u, err := url.Parse(b.State.Data.Bookmarks[i])
+	if err != nil {
+		return err
+	}
+
+	b.GotoURL(u)
+	fmt.Println(b.RenderOutput())
+	return nil
+}
+
+func (c BookmarkGotoCmd) Help() (words []string, desc string) {
+	return []string{"bmgt", "bmg"}, "Goto the specified bookmark number.\nUsage bmg [i]"
+}
+
+type BookmarkListCmd struct{}
+
+func (c BookmarkListCmd) Do(b *Browser, args []string) error {
+	if len(b.State.Data.Bookmarks) == 0 {
+		fmt.Println("You have no bookmarks!")
+		return nil
+	}
+	for i, b := range b.State.Data.Bookmarks {
+		fmt.Println(i, b)
+	}
+	return nil
+}
+
+func (c BookmarkListCmd) Help() (words []string, desc string) {
+	return []string{"bml"}, "List your bookmarks."
+}
+
+type BookmarkAddCmd struct{}
+
+type BookmarkAddCurrentCmd struct{}
+
+func (c BookmarkAddCurrentCmd) Do(b *Browser, args []string) error {
+	url := b.State.CurrURL
+	b.State.Data.Bookmarks = append(b.State.Data.Bookmarks, url)
+	fmt.Printf("added %s to bookmarks\n", url)
+	return nil
+}
+
+func (c BookmarkAddCurrentCmd) Help() (words []string, desc string) {
+	return []string{"bmac"}, "Add the current page to your bookmarks."
+}
+
+type BookmarkAddLinkCmd struct{}
+
+type BookmarkDeleteCmd struct{}
+
+type BookmarkDeleteCurrentCmd struct{}
 
 /*
 

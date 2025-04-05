@@ -47,6 +47,6 @@ func (ih *InputHandler) HandleInput(b *Browser, cmd []string) {
 			fmt.Printf("error: %v\n", err)
 		}
 	} else {
-		fmt.Printf("error: cmd not recognized: %s\n", opt)
+		fmt.Printf("error: cmd not recognized: '%s'\n", opt)
 	}
 }
