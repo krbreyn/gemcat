@@ -6,10 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/krbreyn/gemcat"
 	"github.com/krbreyn/gemcat/browser"
 	"github.com/krbreyn/gemcat/data"
-	"github.com/krbreyn/gemcat/gemtext"
 )
 
 func RunCLI(URL string, isURL bool, loadLast bool) {
@@ -29,15 +27,7 @@ func RunCLI(URL string, isURL bool, loadLast bool) {
 	fmt.Println("welcome to gemcat\ntype help to see the available commands")
 
 	if isURL {
-		_, body, err := browser.Fetch(URL)
-		if err != nil {
-			fmt.Printf("error: %v\n", err)
-			os.Exit(1)
-		}
-
-		content, links := gemtext.DoLinks(body)
-		b.State.Stack = []gemcat.Page{{URL: URL, Content: content, Links: links}}
-
+		b.GotoURL(URL)
 		fmt.Println(b.RenderOutput())
 	} else if loadLast {
 		fmt.Println(b.RenderOutput())
