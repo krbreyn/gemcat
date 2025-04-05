@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -25,7 +26,7 @@ func getAppDir() string {
 	if xdg_data_home != "" {
 		base_data_dir = xdg_data_home
 	} else {
-		base_data_dir = filepath.Join(os.Getenv("HOME"), ".locali/share")
+		base_data_dir = filepath.Join(os.Getenv("HOME"), ".local/share")
 	}
 
 	return filepath.Join(base_data_dir, app_dir)
@@ -99,32 +100,41 @@ func getCacheDir() string {
 }
 
 func CacheGemFile(rawurl string, content []byte) error {
-	full_path, err := pathForURL(rawurl)
+	parsedURL, err := url.Parse(rawurl)
 	if err != nil {
-		return fmt.Errorf("invalid URL: %w", err)
+		return fmt.Errorf("cache error: invalud url: %w", err)
 	}
 
-	dir := filepath.Dir(full_path)
+	relativePath := NormalizeGemPath(parsedURL)
+	fullPath := filepath.Join(getCacheDir(), relativePath)
+
+	dir := filepath.Dir(fullPath)
 	err = os.MkdirAll(dir, 0755)
 	if err != nil {
-		return fmt.Errorf("failed to create cache subdir: %w", err)
+		return fmt.Errorf("cache error: failed to create cache subdir: %w", err)
 	}
 
-	err = os.WriteFile(full_path, content, 0644)
+	err = os.WriteFile(fullPath, content, 0644)
 	if err != nil {
-		return fmt.Errorf("failed to write cache file: %w", err)
+		return fmt.Errorf("cache error: failed to write cache file: %w", err)
 	}
 
 	return nil
 }
 
+func IsCacheMiss(err error) bool {
+	return strings.Contains(err.Error(), "cache miss")
+}
+
 func LoadFromCache(rawurl string) ([]byte, error) {
-	full_path, err := pathForURL(rawurl)
+	u, err := url.Parse(rawurl)
 	if err != nil {
-		return nil, fmt.Errorf("invalid URL: %w", err)
+		return nil, fmt.Errorf("cache error: invalid URL: %w", err)
 	}
 
-	_, err = os.Stat(full_path)
+	fullPath := filepath.Join(getCacheDir(), NormalizeGemPath(u))
+
+	_, err = os.Stat(fullPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, fmt.Errorf("cache miss: no cached file for %s", rawurl)
@@ -132,7 +142,7 @@ func LoadFromCache(rawurl string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to stat cache file: %w", err)
 	}
 
-	content, err := os.ReadFile(full_path)
+	content, err := os.ReadFile(fullPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read cache file: %w", err)
 	}
@@ -141,12 +151,14 @@ func LoadFromCache(rawurl string) ([]byte, error) {
 }
 
 func IsCacheStale(rawurl string, maxAge time.Duration) (bool, error) {
-	full_path, err := pathForURL(rawurl)
+	u, err := url.Parse(rawurl)
 	if err != nil {
-		return false, fmt.Errorf("invalud URL: %w", err)
+		return false, fmt.Errorf("cache error: invalid URL: %w", err)
 	}
 
-	info, err := os.Stat(full_path)
+	fullPath := filepath.Join(getCacheDir(), NormalizeGemPath(u))
+
+	info, err := os.Stat(fullPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return true, nil // stale because it doesn't exist
@@ -158,10 +170,29 @@ func IsCacheStale(rawurl string, maxAge time.Duration) (bool, error) {
 	return age > maxAge, nil
 }
 
+func NormalizeGemPath(u *url.URL) string {
+	host := u.Host
+	path := u.Path
+
+	if path == "" || path == "/" {
+		path = "/index.gmi"
+	} else if strings.HasSuffix(path, "/") {
+		path = filepath.Join(path, "index.gmi")
+	} else {
+		// If it doesn't look like a file, append .gmi
+		if filepath.Ext(path) == "" {
+			path += ".gmi"
+		}
+	}
+
+	// Avoid any weird escaping issues
+	return filepath.Join(host, path)
+}
+
 func pathForURL(rawurl string) (full_path string, err error) {
 	host, path, err := parseURL(rawurl)
 	if err != nil {
-		return "", fmt.Errorf("invalud URL: %w", err)
+		return "", fmt.Errorf("invalid URL: %w", err)
 	}
 
 	return filepath.Join(getCacheDir(), host, path), nil
@@ -170,7 +201,7 @@ func pathForURL(rawurl string) (full_path string, err error) {
 func parseURL(rawurl string) (host, path string, err error) {
 	parsedURL, err := url.Parse(rawurl)
 	if err != nil {
-		return "", "", fmt.Errorf("invalud URL: %w", err)
+		return "", "", fmt.Errorf("invalid URL: %w", err)
 	}
 
 	host = parsedURL.Host

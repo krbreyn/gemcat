@@ -2,7 +2,11 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"slices"
+
+	"github.com/muesli/reflow/wordwrap"
+	"golang.org/x/term"
 )
 
 type Page struct {
@@ -29,8 +33,11 @@ type Browser struct {
 }
 
 func (b *Browser) GotoURL(url string) error {
-	host, path := getHostPath(url)
-	_, body, err := Fetch(host, path)
+	if !slices.Contains(b.History, url) {
+		b.History = append(b.History, url)
+	}
+
+	_, body, err := Fetch(url)
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
 		return err
@@ -57,15 +64,20 @@ func (b *Browser) GotoURL(url string) error {
 		})
 	}
 
-	if !slices.Contains(b.History, url) {
-		b.History = append(b.History, url)
-	}
-
 	return nil
 }
 
 func (b *Browser) GetCurrPage() Page {
 	return b.Stack[b.Pos]
+}
+
+// TODO - don't wrap preformatted blocks?
+func (b *Browser) RenderOutput() string {
+	width, _, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		width = 80
+	}
+	return wordwrap.String(b.RenderCurrPage(), width)
 }
 
 func (b *Browser) RenderCurrPage() string {

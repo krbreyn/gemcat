@@ -99,7 +99,7 @@ func (c GotoCmd) Do(b *Browser, args []string) error {
 		return fmt.Errorf("err: %v", err)
 	}
 
-	fmt.Println(b.RenderCurrPage())
+	fmt.Println(b.RenderOutput())
 	return nil
 }
 
@@ -163,7 +163,7 @@ func (c GotoLinkCmd) Do(b *Browser, args []string) error {
 		return fmt.Errorf("err: %v", err)
 	}
 
-	fmt.Println(b.RenderCurrPage())
+	fmt.Println(b.RenderOutput())
 	return nil
 }
 
@@ -236,7 +236,7 @@ type BackCmd struct{}
 
 func (c BackCmd) Do(b *Browser, args []string) error {
 	b.GoBack()
-	fmt.Println(b.RenderCurrPage())
+	fmt.Println(b.RenderOutput())
 	return nil
 }
 
@@ -248,7 +248,7 @@ type ForwardCmd struct{}
 
 func (c ForwardCmd) Do(b *Browser, args []string) error {
 	b.GoForward()
-	fmt.Println(b.RenderCurrPage())
+	fmt.Println(b.RenderOutput())
 	return nil
 }
 

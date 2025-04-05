@@ -9,9 +9,12 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 )
 
-func Fetch(host, path string) (status, body string, err error) {
+func Fetch(url string) (status, body string, err error) {
+	host, path := getHostPath(url)
+
 ifRedirect:
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: true,
@@ -20,9 +23,35 @@ ifRedirect:
 		},
 	}
 
+	timeout := 10 * time.Second
+	dialer := &net.Dialer{
+		Timeout: timeout,
+	}
+	tlsDialer := &tls.Dialer{
+		NetDialer: dialer,
+		Config:    tlsConfig,
+	}
+
+	isStale, err := IsCacheStale(url, time.Hour*24)
+	if err != nil {
+		return "", "", fmt.Errorf("cache error: %w\n", err)
+	}
+
+	if !isStale {
+		content, err := LoadFromCache(url)
+		if err != nil {
+			return "", "", fmt.Errorf("cache error: %w\n", err)
+		} else {
+			fmt.Println("cache hit")
+			return "20 [cache hit]", string(content), nil
+		}
+	} else {
+		fmt.Println("never seen/stale cache")
+	}
+
 	fmt.Printf("Connecting to gemini://%s/%s\r\n", host, path)
 	addr := net.JoinHostPort(host, "1965")
-	conn, err := tls.Dial("tcp", addr, tlsConfig)
+	conn, err := tlsDialer.Dial("tcp", addr)
 	if err != nil {
 		return "", "", fmt.Errorf("TLS connection failed: %v", err)
 	}
@@ -61,5 +90,12 @@ ifRedirect:
 		b.WriteString(line)
 	}
 
-	return status, b.String(), nil
+	content := b.String()
+
+	err = CacheGemFile(url, []byte(content))
+	if err != nil {
+		return "", "", fmt.Errorf("cache err: %w", err)
+	}
+
+	return status, content, nil
 }

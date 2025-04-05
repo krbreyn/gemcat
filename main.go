@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"os"
@@ -10,8 +9,15 @@ import (
 
 func main() {
 	interactiveMode := flag.Bool("i", false, "Interactive mode")
+	tuiMode := flag.Bool("t", false, "TUI mode")
+
 	help := flag.Bool("help", false, "Help")
 	flag.Parse()
+
+	if *tuiMode && *interactiveMode {
+		fmt.Println("Pick only one!")
+		os.Exit(1)
+	}
 
 	if (len(os.Args) > 2 && os.Args[1] == "help") || *help {
 		fmt.Println("todo")
@@ -29,11 +35,15 @@ func main() {
 		isURL = true
 	}
 
+	if *tuiMode {
+		RunTUI(URL, isURL)
+		os.Exit(0)
+	}
+
 	switch *interactiveMode {
 	case false:
 		if isURL {
-			host, path := getHostPath(URL)
-			_, body, err := Fetch(host, path)
+			_, body, err := Fetch(URL)
 			if err != nil {
 				fmt.Printf("error: %v\n", err)
 				os.Exit(1)
@@ -46,45 +56,8 @@ func main() {
 		}
 
 	case true:
-		var b Browser
-
-		if isURL {
-			host, path := getHostPath(URL)
-
-			_, body, err := Fetch(host, path)
-			if err != nil {
-				fmt.Printf("error: %v\n", err)
-				os.Exit(1)
-			}
-
-			content, links := DoLinks(body)
-			b.Stack = []Page{{URL: URL, Content: content, Links: links}}
-
-			fmt.Println(b.RenderCurrPage())
-		}
-		fmt.Println("welcome to gemcat\ntype help to see the available commands")
-
-		scanner := bufio.NewScanner(os.Stdin)
-
-		b.CurrURL = URL
-
-		ih := NewInputHandler()
-
-		for {
-			fmt.Print("> ")
-
-			if !scanner.Scan() {
-				if err := scanner.Err(); err != nil {
-					fmt.Fprintln(os.Stderr, "Error reading input:", err)
-				}
-				break
-			}
-
-			text := scanner.Text()
-			cmd := strings.Fields(text)
-
-			ih.HandleInput(&b, cmd)
-		}
+		RunCLI(URL, isURL)
+		os.Exit(0)
 	}
 }
 
