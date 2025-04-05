@@ -36,6 +36,14 @@ func (ih *InputHandler) HandleInput(b *Browser, cmd []string) {
 	}
 
 	if opt == "help" {
+		if len(args) != 0 {
+			if cmd, ok := ih.cmd_map[args[0]]; ok {
+				ih.help_cmd.Do([]BrowserCmd{cmd})
+			} else {
+				fmt.Printf("cmd %s does not exist\n", args[0])
+			}
+			return
+		}
 		ih.help_cmd.Do(ih.cmds)
 		return
 	}
