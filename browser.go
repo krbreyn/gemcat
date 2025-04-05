@@ -39,10 +39,10 @@ func (b *Browser) GotoURL(url string) error {
 	b.CurrURL = url
 
 	content, links := DoLinks(body)
+
 	if len(b.Stack) != 0 {
 		b.Pos++
 	}
-
 	if b.Pos == len(b.Stack) {
 		b.Stack = append(b.Stack, Page{
 			URL:     url,
@@ -79,7 +79,6 @@ func (b *Browser) GoForward() {
 	if len(b.Stack) == 0 {
 		return
 	}
-
 	if b.Pos < len(b.Stack)-1 {
 		b.Pos++
 	}
@@ -90,7 +89,6 @@ func (b *Browser) GoBack() {
 	if len(b.Stack) == 0 {
 		return
 	}
-
 	if b.Pos > 0 {
 		b.Pos--
 	}

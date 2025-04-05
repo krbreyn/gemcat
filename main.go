@@ -61,9 +61,8 @@ func main() {
 			b.Stack = []Page{{URL: URL, Content: content, Links: links}}
 
 			fmt.Println(b.RenderCurrPage())
-		} else {
-			fmt.Println("welcome to gemcat\ntype help to see the available commands")
 		}
+		fmt.Println("welcome to gemcat\ntype help to see the available commands")
 
 		scanner := bufio.NewScanner(os.Stdin)
 
@@ -82,8 +81,8 @@ func main() {
 			}
 
 			text := scanner.Text()
-
 			cmd := strings.Fields(text)
+
 			ih.HandleInput(&b, cmd)
 		}
 	}
@@ -97,4 +96,8 @@ func getHostPath(url string) (host, path string) {
 		host, path = split[0], split[1]
 	}
 	return host, path
+}
+
+func isGeminiLink(url string) bool {
+	return strings.HasPrefix(url, "gemini://") || !strings.Contains(url, "://")
 }

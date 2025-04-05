@@ -85,7 +85,3 @@ func ColorGemtext(gemtxt string, links []Link) string {
 
 	return b.String()
 }
-
-func isGeminiLink(url string) bool {
-	return strings.HasPrefix(url, "gemini://") || !strings.Contains(url, "://")
-}

@@ -104,7 +104,7 @@ func (c GotoCmd) Do(b *Browser, args []string) error {
 }
 
 func (c GotoCmd) Help() (words []string, desc string) {
-	return []string{"goto", "gt"}, "Open and go to a Gemini link."
+	return []string{"goto", "gt"}, "Open and go to a Gemini link.\nUsage: gt [link]"
 }
 
 type LinkCmd struct{}
@@ -124,7 +124,7 @@ func (c LinkCmd) Do(b *Browser, args []string) error {
 }
 
 func (c LinkCmd) Help() (words []string, desc string) {
-	return []string{"link", "l"}, "Print the link of the corresponding link number from the current page."
+	return []string{"link", "l"}, "Print the link of the corresponding link number from the current page.\nUsage: l [no]"
 }
 
 type GotoLinkCmd struct{}
@@ -168,7 +168,7 @@ func (c GotoLinkCmd) Do(b *Browser, args []string) error {
 }
 
 func (c GotoLinkCmd) Help() (words []string, desc string) {
-	return []string{"g"}, "Open and goto the specified link number on the current page."
+	return []string{"g"}, "Open and goto the specified link number on the current page.\nUsage: g [no]"
 }
 
 type LinksCmd struct{}
@@ -253,7 +253,7 @@ func (c ForwardCmd) Do(b *Browser, args []string) error {
 }
 
 func (c ForwardCmd) Help() (words []string, desc string) {
-	return []string{"forward", "fd", "f"}, "Go forward one page.."
+	return []string{"forward", "fd", "f"}, "Go forward one page."
 }
 
 // TODO
