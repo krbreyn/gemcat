@@ -177,4 +177,7 @@ func (c BookmarkRemoveCurrentCmd) Help() (words []string, desc string) {
 }
 
 // TODO
+type BookmarkClearAll struct{}
+
+// TODO
 type BookmarkSwapCmd struct{}

@@ -11,4 +11,6 @@ Secondly, gemcat has a interactive shell-styled style client. Launch it by using
 
 with, optionally, a URL following as the initial request. From there you can type `help` to see the available commands that let you navigate and interact with the browser.
 
+![Demo Gif]()
+
 Thirdly, in the future, gemcat will also have a TUI powered by tcell that will have keyboard-navigation and full mouse support.
