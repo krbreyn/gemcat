@@ -179,8 +179,49 @@ func (c BookmarkRemoveCurrentCmd) Help() (words []string, desc string) {
 	return []string{"bmrmc"}, "Removes the current page the bookmarks, if it is so.\nUsage: bmrmc [i]"
 }
 
-// TODO
-type BookmarkClearAll struct{}
+type BookmarkClearAllCmd struct{}
 
-// TODO
+func (c BookmarkClearAllCmd) Do(b *Browser, args []string) error {
+	l := len(b.State.Data.Bookmarks)
+	b.State.Data.Bookmarks = b.State.Data.Bookmarks[:0]
+	fmt.Printf("deleted %d bookmarks\n", l)
+	return nil
+}
+
+func (c BookmarkClearAllCmd) Help() (words []string, desc string) {
+	return []string{"bmcla"}, "Remove all items from your bookmarks."
+}
+
 type BookmarkSwapCmd struct{}
+
+func (c BookmarkSwapCmd) Do(b *Browser, args []string) error {
+	if len(args) != 2 {
+		return errors.New("must include bookmark numbers to swap")
+	}
+
+	i1, err := strconv.Atoi(args[0])
+	if err != nil {
+		return errors.New("item 1 is not a number!")
+	}
+	i2, err := strconv.Atoi(args[1])
+	if err != nil {
+		return errors.New("item 2 is not a number!")
+	}
+
+	if i1 < 0 || i1 > len(b.State.Data.Bookmarks)-1 {
+		return errors.New("bookmark number 1 is out of range")
+	}
+	if i2 < 0 || i2 > len(b.State.Data.Bookmarks)-1 {
+		return errors.New("bookmark number 2 is out of range")
+	}
+
+	temp := b.State.Data.Bookmarks[i1]
+	b.State.Data.Bookmarks[i1] = b.State.Data.Bookmarks[i2]
+	b.State.Data.Bookmarks[i2] = temp
+	fmt.Printf("swapped %d and %d\n", i1, i2)
+	return nil
+}
+
+func (c BookmarkSwapCmd) Help() (words []string, desc string) {
+	return []string{"bmsw"}, "Swap the places of two bookmark items."
+}

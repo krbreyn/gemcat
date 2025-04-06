@@ -88,9 +88,10 @@ ifRedirect:
 			return "", "", fmt.Errorf("redirect url parse error: %w", err)
 		}
 		fmt.Printf("Redirect: %s\r\n", new_url.String())
+
 		goto ifRedirect
 	}
-	if status_no >= 20 && status_no <= 29 {
+	if status_no < 20 && status_no > 29 {
 		return "", "", fmt.Errorf("status was not 2x but was %d, status: %s", status_no, status)
 	}
 
