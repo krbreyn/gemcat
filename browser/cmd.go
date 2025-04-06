@@ -30,6 +30,7 @@ func makeCmdMap() (map[string]BrowserCmd, []BrowserCmd) {
 		BookmarkRemoveCurrentCmd{},
 		BookmarkClearAllCmd{},
 		BookmarkSwapCmd{},
+		RefreshCmd{},
 		LessCmd{},
 		ReprintCmd{},
 		ExitCmd{},

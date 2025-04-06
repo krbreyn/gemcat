@@ -34,12 +34,12 @@ type LinksCmd struct{}
 
 func (c LinksCmd) Do(b *Browser, args []string) error {
 	if len(b.State.Stack) == 0 {
-		return errors.New("There are no links!")
+		return errors.New("you have no page")
 	}
 
 	links := b.GetCurrPage().Links
 	if len(links) == 0 {
-		fmt.Println("No links!")
+		return errors.New("there are no links")
 	} else {
 		for _, s := range b.GetCurrPage().Links {
 			fmt.Println(s.No, s.URL)
@@ -56,7 +56,7 @@ type LinkCurrentCmd struct{}
 
 func (c LinkCurrentCmd) Do(b *Browser, args []string) error {
 	if b.State.CurrURL == "" {
-		fmt.Println("You have no current link!")
+		return errors.New("you have no current page")
 	} else {
 		fmt.Println(b.State.CurrURL)
 	}
@@ -101,7 +101,7 @@ func (c LinkGotoCmd) Do(b *Browser, args []string) error {
 		return err
 	}
 
-	err = b.GotoURL(u)
+	err = b.GotoURLCache(u)
 	if err != nil {
 		return fmt.Errorf("err: %v", err)
 	}

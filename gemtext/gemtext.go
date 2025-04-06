@@ -46,22 +46,22 @@ func ColorGemtext(gemtxt string, links []gemcat.Link) string {
 	scanner := bufio.NewScanner(strings.NewReader(gemtxt))
 
 	var b strings.Builder
-	// var isInPreformattedBlock bool
+	var isInPreformattedBlock bool
 	var i int
 
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		// if strings.HasPrefix(line, "```") {
-		// 	isInPreformattedBlock = !isInPreformattedBlock
-		// 	b.WriteString("\033[3m]" + strings.TrimPrefix(line, "```") + "\033[23m\n") // Italics
-		// 	continue
-		// }
+		if strings.HasPrefix(line, "```") {
+			isInPreformattedBlock = !isInPreformattedBlock
+			b.WriteString("\033[3m]" + strings.TrimPrefix(line, "```") + "\033[23m\n") // Italics
+			continue
+		}
 
-		// if isInPreformattedBlock {
-		// 	b.WriteString(line + "\n")
-		// 	continue
-		// }
+		if isInPreformattedBlock {
+			b.WriteString(line + "\n")
+			continue
+		}
 
 		if strings.HasPrefix(line, "#") {
 			b.WriteString("\033[34m" + line + "\033[39m\n") // Blue

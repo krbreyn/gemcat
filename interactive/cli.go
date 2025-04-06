@@ -30,7 +30,7 @@ func RunCLI(u *url.URL, isURL bool, loadLast bool) {
 	fmt.Println("welcome to gemcat\ntype help to see the available commands")
 
 	if isURL && u.String() != b.State.CurrURL {
-		err = b.GotoURL(u)
+		err = b.GotoURLCache(u)
 		if err != nil {
 			fmt.Printf("err: %v\n", err)
 			os.Exit(1)

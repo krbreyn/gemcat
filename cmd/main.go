@@ -7,9 +7,12 @@ import (
 	"os"
 	"strings"
 
+	"github.com/krbreyn/gemcat"
 	"github.com/krbreyn/gemcat/browser"
 	"github.com/krbreyn/gemcat/gemtext"
 	"github.com/krbreyn/gemcat/interactive"
+	"github.com/muesli/reflow/wordwrap"
+	"golang.org/x/term"
 )
 
 func main() {
@@ -57,12 +60,22 @@ func main() {
 
 	if !*cliMode && !*tuiMode {
 		if isURL {
-			_, body, err := browser.FetchGemini(u)
+			_, body, err := browser.FetchGemini(u, true)
 			if err != nil {
 				fmt.Printf("error: %v\n", err)
 				os.Exit(1)
 			}
-			fmt.Println(gemtext.ColorGemtext(body, nil))
+			_, links := gemtext.DoLinks(body, func(url string) bool { return false }, func(url string) bool { return false })
+			p := gemcat.Page{
+				URL:     u.String(),
+				Content: body,
+				Links:   links,
+			}
+			width, _, err := term.GetSize(int(os.Stdout.Fd()))
+			if err != nil {
+				width = 80
+			}
+			fmt.Println(wordwrap.String(browser.RenderPage(p), width))
 			os.Exit(0)
 		} else {
 			fmt.Println("error: must include URL if not using interactive mode")

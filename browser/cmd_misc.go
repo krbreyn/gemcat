@@ -1,14 +1,44 @@
 package browser
 
 import (
+	"errors"
 	"fmt"
+	"net/url"
 	"os"
+	"os/exec"
+	"strings"
 
 	"github.com/krbreyn/gemcat/data"
 )
 
-// TODO - refresh and download a fresh page
+type CloseCurrentCmd struct{}
+
 type RefreshCmd struct{}
+
+func (c RefreshCmd) Do(b *Browser, args []string) error {
+	u, err := url.Parse(b.State.CurrURL)
+	if err != nil {
+		return err
+	}
+	if len(b.State.Stack) > 1 {
+		b.GoBack()
+	} else {
+		stem := StackEmptyCmd{}
+		if err := stem.Do(b, nil); err != nil {
+			return err
+		}
+	}
+	err = b.GotoURLNoCache(u)
+	if err != nil {
+		return nil
+	}
+	fmt.Println(b.RenderOutput())
+	return nil
+}
+
+func (c RefreshCmd) Help() (words []string, desc string) {
+	return []string{"rfsh"}, "Refresh the current page."
+}
 
 // TODO
 type ListCacheCmd struct{}
@@ -17,15 +47,25 @@ type ListCacheCmd struct{}
 // maybe include an option for the link from a page
 type JustCatCmd struct{}
 
-// TODO
+type JustCatLess struct{}
+
 type LessCmd struct{}
 
 func (c LessCmd) Do(b *Browser, args []string) error {
-	return nil
+	if len(b.State.Stack) == 0 {
+		return errors.New("you have no current page")
+	}
+
+	cmd := exec.Command("less", "-R")
+	cmd.Stdin = strings.NewReader(b.RenderOutput())
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
 }
 
 func (c LessCmd) Help() (words []string, desc string) {
-	return []string{"less"}, "Will pipe the current page to less when implemented."
+	return []string{"less"}, "Opens the current page using les."
 }
 
 type ReprintCmd struct{}

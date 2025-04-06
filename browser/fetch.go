@@ -16,7 +16,7 @@ import (
 	"github.com/krbreyn/gemcat/tofu"
 )
 
-func FetchGemini(url *url.URL) (status, body string, err error) {
+func FetchGemini(url *url.URL, doCache bool) (status, body string, err error) {
 
 ifRedirect:
 	if url.Scheme != "gemini" {
@@ -44,21 +44,23 @@ ifRedirect:
 		Config:    tlsConfig,
 	}
 
-	isStale, err := data.IsCacheStale(url, time.Hour*24)
-	if err != nil {
-		return "", "", fmt.Errorf("cache error: %w\n", err)
-	}
-
-	if !isStale {
-		content, err := data.LoadFromCache(url)
+	if doCache {
+		isStale, err := data.IsCacheStale(url, time.Hour*24)
 		if err != nil {
 			return "", "", fmt.Errorf("cache error: %w\n", err)
-		} else {
-			fmt.Println("cache hit")
-			return "20 [cache hit]", string(content), nil
 		}
-	} else {
-		fmt.Println("never seen/stale cache")
+
+		if !isStale {
+			content, err := data.LoadFromCache(url)
+			if err != nil {
+				return "", "", fmt.Errorf("cache error: %w\n", err)
+			} else {
+				fmt.Println("cache hit")
+				return "20 [cache hit]", string(content), nil
+			}
+		} else {
+			fmt.Println("never seen/stale cache")
+		}
 	}
 
 	fmt.Printf("Connecting to gemini://%s/%s\r\n", host, path)
