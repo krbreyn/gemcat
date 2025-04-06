@@ -16,7 +16,7 @@ import (
 	"github.com/krbreyn/gemcat/tofu"
 )
 
-func Fetch(url *url.URL) (status, body string, err error) {
+func FetchGemini(url *url.URL) (status, body string, err error) {
 
 ifRedirect:
 	if url.Scheme != "gemini" {
@@ -25,9 +25,8 @@ ifRedirect:
 
 	host, path := url.Host, url.Path
 
-	if strings.Contains(host, "//") {
-		strings.Replace(host, "//", "/", 1)
-	}
+	// TODO fix whatever bug causes me to do this
+	host = strings.Replace(host, "//", "/", 1)
 
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: true,
@@ -83,7 +82,7 @@ ifRedirect:
 		return "", "", fmt.Errorf("weird status err: %v", err)
 	}
 	// TODO integrate this function with browser to update history properly
-	if status_no == 30 || status_no == 31 {
+	if status_no >= 30 && status_no <= 39 {
 		new_url, err := url.Parse(strings.Fields(status)[1])
 		if err != nil {
 			return "", "", fmt.Errorf("redirect url parse error: %w", err)
@@ -91,8 +90,8 @@ ifRedirect:
 		fmt.Printf("Redirect: %s\r\n", new_url.String())
 		goto ifRedirect
 	}
-	if status_no != 20 {
-		return "", "", fmt.Errorf("status was not 20 but was %d, status: %s", status_no, status)
+	if status_no >= 20 && status_no <= 29 {
+		return "", "", fmt.Errorf("status was not 2x but was %d, status: %s", status_no, status)
 	}
 
 	var b strings.Builder

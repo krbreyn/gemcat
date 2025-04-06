@@ -57,7 +57,7 @@ func main() {
 
 	if !*cliMode && !*tuiMode {
 		if isURL {
-			_, body, err := browser.Fetch(u)
+			_, body, err := browser.FetchGemini(u)
 			if err != nil {
 				fmt.Printf("error: %v\n", err)
 				os.Exit(1)

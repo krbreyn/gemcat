@@ -65,6 +65,9 @@ func (c StackCloseCmd) Help() (words []string, desc string) {
 	return []string{"stcl"}, "Closes every page beneath the current stack position."
 }
 
+// TODO - the opposite of close, removing everyting before the current item
+type StackCollapseCmd struct{}
+
 type StackEmptyCmd struct{}
 
 func (c StackEmptyCmd) Do(b *Browser, args []string) error {

@@ -49,7 +49,10 @@ func (c BookmarkGotoCmd) Do(b *Browser, args []string) error {
 		return err
 	}
 
-	b.GotoURL(u)
+	err = b.GotoURL(u)
+	if err != nil {
+		return fmt.Errorf("err: %v", err)
+	}
 	fmt.Println(b.RenderOutput())
 	return nil
 }

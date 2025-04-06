@@ -45,7 +45,7 @@ func (b *Browser) GotoURL(url *url.URL) error {
 		b.State.Data.History = append(b.State.Data.History, url.String())
 	}
 
-	_, body, err := Fetch(url)
+	_, body, err := FetchGemini(url)
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
 		return err

@@ -30,7 +30,11 @@ func RunCLI(u *url.URL, isURL bool, loadLast bool) {
 	fmt.Println("welcome to gemcat\ntype help to see the available commands")
 
 	if isURL && u.String() != b.State.CurrURL {
-		b.GotoURL(u)
+		err = b.GotoURL(u)
+		if err != nil {
+			fmt.Printf("err: %v\n", err)
+			os.Exit(1)
+		}
 		fmt.Println(b.RenderOutput())
 	} else if loadLast || (u != nil && u.String() == b.State.CurrURL) {
 		fmt.Println(b.RenderOutput())
@@ -42,7 +46,10 @@ func RunCLI(u *url.URL, isURL bool, loadLast bool) {
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-sigs
-		data.SaveDataFile(b.State)
+		err = data.SaveDataFile(b.State)
+		if err != nil {
+			panic(err)
+		}
 		os.Exit(0)
 	}()
 
