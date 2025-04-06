@@ -5,7 +5,7 @@ Firstly, you can use it to fetch and print Gemini content, such as:
 
 `gemcat geminiprotocol.net/`
 
-Secondly, gemcat has a interactive shell-styled style client. Launch it by using:
+Secondly, gemcat has a interactive shell-styled client. Launch it by using:
 
 `gemcat -i`
 
