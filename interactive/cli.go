@@ -29,10 +29,10 @@ func RunCLI(u *url.URL, isURL bool, loadLast bool) {
 
 	fmt.Println("welcome to gemcat\ntype help to see the available commands")
 
-	if isURL {
+	if isURL && u.String() != b.State.CurrURL {
 		b.GotoURL(u)
 		fmt.Println(b.RenderOutput())
-	} else if loadLast {
+	} else if loadLast || u.String() == b.State.CurrURL {
 		fmt.Println(b.RenderOutput())
 	}
 

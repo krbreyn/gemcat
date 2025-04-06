@@ -20,7 +20,6 @@ func DoLinks(gemtxt string, wasLinkVisited, isLinkBookmarked func(url string) bo
 		if strings.HasPrefix(line, "=>") {
 			split := strings.Fields(line)
 			url, text := split[1], split[2:] // [0] = "=>"
-			fmt.Println(split[0], split[1], split[2])
 
 			b.WriteString("=> " + fmt.Sprintf("[%d] ", i))
 			if gemcat.IsGeminiLink(url) {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -27,11 +28,17 @@ func makeCmdMap() (map[string]BrowserCmd, []BrowserCmd) {
 		LinkCmd{},
 		LinksCmd{},
 		StackCmd{},
+		StackGotoCmd{},
+		StackCloseCmd{},
+		StackEmptyCmd{},
 		HistoryCmd{},
+		HistoryGotoCmd{},
 		BookmarkGotoCmd{},
 		BookmarkListCmd{},
 		BookmarkAddCurrentCmd{},
 		BookmarkAddLinkCmd{},
+		BookmarkRemoveCmd{},
+		BookmarkRemoveCurrentCmd{},
 		LessCmd{},
 		ReprintCmd{},
 		ExitCmd{},
@@ -225,6 +232,57 @@ func (c StackCmd) Help() (words []string, desc string) {
 	return []string{"stack", "st"}, "Print the link stack and your position in it."
 }
 
+type StackGotoCmd struct{}
+
+func (c StackGotoCmd) Do(b *Browser, args []string) error {
+	if len(args) == 0 {
+		return errors.New("must include stack item number")
+	}
+
+	i, err := strconv.Atoi(args[0])
+	if err != nil {
+		return errors.New("not a number!")
+	}
+
+	if i < 0 || i > len(b.State.Stack)-1 {
+		return errors.New("stack item number is out of range")
+	}
+
+	b.State.Pos = i
+	fmt.Println(b.RenderOutput())
+	return nil
+}
+
+func (c StackGotoCmd) Help() (words []string, desc string) {
+	return []string{"stgt", "stg"}, "Leap to the stack item number."
+}
+
+type StackCloseCmd struct{}
+
+func (c StackCloseCmd) Do(b *Browser, args []string) error {
+	old := len(b.State.Stack)
+	b.State.Stack = b.State.Stack[:b.State.Pos+1]
+	fmt.Printf("closed %d pages\n", old-len(b.State.Stack))
+	return nil
+}
+
+func (c StackCloseCmd) Help() (words []string, desc string) {
+	return []string{"stcl"}, "Closes every page beneath the current stack position."
+}
+
+type StackEmptyCmd struct{}
+
+func (c StackEmptyCmd) Do(b *Browser, args []string) error {
+	l := len(b.State.Stack)
+	b.State.Stack = b.State.Stack[:0]
+	fmt.Printf("closed %d pages\n", l)
+	return nil
+}
+
+func (c StackEmptyCmd) Help() (words []string, desc string) {
+	return []string{"stem"}, "Empties the stack and closes all pages."
+}
+
 type HistoryCmd struct{}
 
 func (c HistoryCmd) Do(b *Browser, args []string) error {
@@ -243,8 +301,34 @@ func (c HistoryCmd) Help() (words []string, desc string) {
 	return []string{"history", "hs"}, "Print the history of visited pages."
 }
 
-// TODO
 type HistoryGotoCmd struct{}
+
+func (c HistoryGotoCmd) Do(b *Browser, args []string) error {
+	if len(args) == 0 {
+		return errors.New("must include history item number")
+	}
+
+	i, err := strconv.Atoi(args[0])
+	if err != nil {
+		return errors.New("not a number!")
+	}
+
+	if i < 0 || i > len(b.State.Data.History)-1 {
+		return errors.New("history item number is out of range")
+	}
+
+	u, err := url.Parse(b.State.Data.History[i])
+	if err != nil {
+		return err
+	}
+	b.GotoURL(u)
+	fmt.Println(b.RenderOutput())
+	return nil
+}
+
+func (c HistoryGotoCmd) Help() (words []string, desc string) {
+	return []string{"hsgt", "hsg"}, "Goto and open an item in your history."
+}
 
 /*
 
@@ -299,6 +383,7 @@ func (c BookmarkListCmd) Help() (words []string, desc string) {
 	return []string{"bml"}, "List your bookmarks."
 }
 
+// TODO
 type BookmarkAddCmd struct{}
 
 type BookmarkAddCurrentCmd struct{}
@@ -348,15 +433,94 @@ func (c BookmarkAddLinkCmd) Help() (words []string, desc string) {
 	return []string{"bmal"}, "Add a link from the page to your bookmarks"
 }
 
-type BookmarkDeleteCmd struct{}
+type BookmarkRemoveCmd struct{}
 
-type BookmarkDeleteCurrentCmd struct{}
+func (c BookmarkRemoveCmd) Do(b *Browser, args []string) error {
+	if len(args) == 0 {
+		return errors.New("must include bookmark number")
+	}
+
+	i, err := strconv.Atoi(args[0])
+	if err != nil {
+		return errors.New("not a number!")
+	}
+
+	if i < 0 || i > len(b.State.Data.Bookmarks)-1 {
+		return errors.New("bookmark number is out of range")
+	}
+
+	removedURL := b.State.Data.Bookmarks[i]
+	fmt.Println("deleting", removedURL, "...")
+	b.State.Data.Bookmarks = slices.Delete(b.State.Data.Bookmarks, i, i+1)
+
+	removeBookmarkFromStack(b, removedURL)
+	return nil
+}
+
+func removeBookmarkFromStack(b *Browser, removedURL string) {
+	for pageIndex := range b.State.Stack {
+		for linkIndex := range b.State.Stack[pageIndex].Links {
+			link := &b.State.Stack[pageIndex].Links[linkIndex]
+			linkURL := link.URL
+
+			if !strings.HasPrefix(linkURL, "gemini://") && !strings.Contains(linkURL, "://") {
+				baseURL := b.State.Stack[pageIndex].URL
+				linkURL = strings.TrimPrefix(linkURL, "/")
+				linkURL = strings.TrimSuffix(baseURL, "/") + "/" + linkURL
+			}
+
+			if linkURL == removedURL {
+				link.Bookmarked = false
+			}
+		}
+	}
+}
+
+func (c BookmarkRemoveCmd) Help() (words []string, desc string) {
+	return []string{"bmrm"}, "Removes a bookmark.\nUsage: bmrm [i]"
+}
+
+type BookmarkRemoveCurrentCmd struct{}
+
+func (c BookmarkRemoveCurrentCmd) Do(b *Browser, args []string) error {
+	var deletedOnce bool
+rerun:
+	if slices.Contains(b.State.Data.Bookmarks, b.State.CurrURL) {
+		for i, u := range b.State.Data.Bookmarks {
+			if u == b.State.CurrURL {
+				removedURL := b.State.Data.Bookmarks[i]
+				fmt.Println("deleting", removedURL, "...")
+				b.State.Data.Bookmarks = slices.Delete(b.State.Data.Bookmarks, i, i+1)
+				if !deletedOnce {
+					removeBookmarkFromStack(b, removedURL)
+					deletedOnce = true
+				}
+				goto rerun
+			}
+		}
+	}
+	return nil
+}
+
+func (c BookmarkRemoveCurrentCmd) Help() (words []string, desc string) {
+	return []string{"bmrmc"}, "Removes the current page the bookmarks, if it is so.\nUsage: bmrmc [i]"
+}
 
 /*
 
 	Misc Commands
 
 */
+
+// TODO - refresh and download a fresh page
+type RefreshCmd struct{}
+
+// TODO
+type ListCacheCmd struct{}
+
+// TODO - gemcat within gemcat, just recieve print a link without adding it to the stack
+// maybe include an option for the link from a page
+type JustCatCmd struct{}
 
 // TODO
 type LessCmd struct{}
