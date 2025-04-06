@@ -52,6 +52,21 @@ func (c LinksCmd) Help() (words []string, desc string) {
 	return []string{"links", "ls"}, "List the links accessable from the current page."
 }
 
+type LinkCurrentCmd struct{}
+
+func (c LinkCurrentCmd) Do(b *Browser, args []string) error {
+	if b.State.CurrURL == "" {
+		fmt.Println("You have no current link!")
+	} else {
+		fmt.Println(b.State.CurrURL)
+	}
+	return nil
+}
+
+func (c LinkCurrentCmd) Help() (words []string, desc string) {
+	return []string{"lc"}, "Print the current link."
+}
+
 type LinkGotoCmd struct{}
 
 func (c LinkGotoCmd) Do(b *Browser, args []string) error {

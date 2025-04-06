@@ -15,7 +15,7 @@ func (c GotoCmd) Do(b *Browser, args []string) error {
 	}
 
 	link := args[0]
-	if strings.HasPrefix(link, "gemini://") {
+	if !strings.HasPrefix(link, "gemini://") {
 		link = "gemini://" + link
 	}
 

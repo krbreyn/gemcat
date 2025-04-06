@@ -42,7 +42,10 @@ func (c ReprintCmd) Help() (words []string, desc string) {
 type ExitCmd struct{}
 
 func (c ExitCmd) Do(b *Browser, args []string) error {
-	data.SaveDataFile(b.State)
+	err := data.SaveDataFile(b.State)
+	if err != nil {
+		panic(err)
+	}
 	os.Exit(0)
 	return nil // should never happen
 }

@@ -44,6 +44,7 @@ func (c StackGotoCmd) Do(b *Browser, args []string) error {
 	}
 
 	b.State.Pos = i
+	b.State.CurrURL = b.State.Stack[b.State.Pos].URL
 	fmt.Println(b.RenderOutput())
 	return nil
 }
@@ -65,14 +66,27 @@ func (c StackCloseCmd) Help() (words []string, desc string) {
 	return []string{"stcl"}, "Closes every page beneath the current stack position."
 }
 
-// TODO - the opposite of close, removing everyting before the current item
-type StackCollapseCmd struct{}
+type StackCompressCmd struct{}
+
+func (c StackCompressCmd) Do(b *Browser, args []string) error {
+	old := len(b.State.Stack)
+	b.State.Stack = b.State.Stack[b.State.Pos:]
+	b.State.Pos = 0
+	fmt.Printf("closed %d pages\n", old-len(b.State.Stack))
+	return nil
+}
+
+func (c StackCompressCmd) Help() (words []string, desc string) {
+	return []string{"stcmp"}, "Closes every page above the current stack position."
+}
 
 type StackEmptyCmd struct{}
 
 func (c StackEmptyCmd) Do(b *Browser, args []string) error {
 	l := len(b.State.Stack)
 	b.State.Stack = b.State.Stack[:0]
+	b.State.CurrURL = ""
+	b.State.Pos = 0
 	fmt.Printf("closed %d pages\n", l)
 	return nil
 }
