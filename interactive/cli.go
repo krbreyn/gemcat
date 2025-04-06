@@ -32,7 +32,7 @@ func RunCLI(u *url.URL, isURL bool, loadLast bool) {
 	if isURL && u.String() != b.State.CurrURL {
 		b.GotoURL(u)
 		fmt.Println(b.RenderOutput())
-	} else if loadLast || u.String() == b.State.CurrURL {
+	} else if loadLast || (u != nil && u.String() == b.State.CurrURL) {
 		fmt.Println(b.RenderOutput())
 	}
 
@@ -57,6 +57,6 @@ func RunCLI(u *url.URL, isURL bool, loadLast bool) {
 		}
 
 		cmd := strings.Fields(scanner.Text())
-		b.IH.HandleInput(b, cmd)
+		b.Sh.HandleInput(b, cmd)
 	}
 }

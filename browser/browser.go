@@ -19,11 +19,11 @@ func RenderPage(p gemcat.Page) string {
 
 type Browser struct {
 	State gemcat.BrowserState
-	IH    InputHandler
+	Sh    Shell
 }
 
 func NewBrowser() *Browser {
-	return &Browser{IH: NewInputHandler()}
+	return &Browser{Sh: NewShell()}
 }
 
 func (b *Browser) WasLinkVisited(url string) bool {

@@ -2,18 +2,18 @@ package browser
 
 import "fmt"
 
-type InputHandler struct {
+type Shell struct {
 	cmd_map  map[string]BrowserCmd
 	cmds     []BrowserCmd
 	help_cmd HelpCmd
 }
 
-func NewInputHandler() InputHandler {
+func NewShell() Shell {
 	cmd_map, cmds := makeCmdMap()
-	return InputHandler{cmd_map, cmds, HelpCmd{}}
+	return Shell{cmd_map, cmds, HelpCmd{}}
 }
 
-func (ih *InputHandler) HandleInput(b *Browser, cmd []string) {
+func (sh *Shell) HandleInput(b *Browser, cmd []string) {
 	if len(cmd) == 0 {
 		return
 	}
@@ -26,20 +26,20 @@ func (ih *InputHandler) HandleInput(b *Browser, cmd []string) {
 
 	if opt == "help" {
 		if len(args) != 0 {
-			if cmd, ok := ih.cmd_map[args[0]]; ok {
-				ih.help_cmd.Do([]BrowserCmd{cmd})
+			if cmd, ok := sh.cmd_map[args[0]]; ok {
+				sh.help_cmd.Do([]BrowserCmd{cmd})
 			} else {
 				fmt.Printf("cmd %s does not exist\n", args[0])
 			}
 			return
 		}
-		ih.help_cmd.Do(ih.cmds)
+		sh.help_cmd.Do(sh.cmds)
 		return
 	}
 
-	if cmd, ok := ih.cmd_map[opt]; ok {
+	if cmd, ok := sh.cmd_map[opt]; ok {
 		if len(args) != 0 && args[0] == "help" {
-			ih.help_cmd.Do([]BrowserCmd{cmd})
+			sh.help_cmd.Do([]BrowserCmd{cmd})
 			return
 		}
 		err := cmd.Do(b, args)
