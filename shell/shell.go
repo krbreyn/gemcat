@@ -100,6 +100,16 @@ func makeCmdMap() (map[string]ShellCmd, []HelpInfo) {
 		HistoryRmCmd{},
 		HistoryClearAllCmd{},
 		HistoryGotoCmd{},
+
+		BookmarksCmd{},
+		BookmarkRmCmd{},
+		BookmarkAddLinkCmd{},
+		BookmarkAddCurrentCmd{},
+		BookmarkSwapCmd{},
+		BookmarkClearAllCmd{},
+		BookmarkGotoCmd{},
+
+		ReprintCmd{},
 	}
 	var help []HelpInfo
 

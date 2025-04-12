@@ -25,15 +25,15 @@ func main() {
 	argc := len(args)
 
 	if *tuiMode && *cliMode {
-		die("Pick only CLI mode or TUI mode!")
+		die("err: Pick only CLI mode or TUI mode!")
 	}
 
 	if *loadLast && (!*cliMode && !*tuiMode) {
-		die("'-ll' cannot be used outside of interactive mode!")
+		die("err: '-ll' cannot be used outside of interactive mode!")
 	}
 
 	if argc == 0 && (!*cliMode && !*tuiMode) {
-		die("Must include URL if not using interactive mode!")
+		die("err: Must include URL if not using interactive mode!")
 	}
 
 	if *help || (argc > 2 && args[1] == "help") {
@@ -59,8 +59,7 @@ func main() {
 
 	if !*cliMode && !*tuiMode {
 		if !isURL {
-			fmt.Println("err: must include URL if not using interactive mode")
-			os.Exit(1)
+			die("err: must include URL if not using interactive mode")
 		}
 
 		_, body, err := browser.FetchGemini(u, true)

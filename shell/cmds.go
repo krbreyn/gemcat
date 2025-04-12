@@ -12,6 +12,51 @@ import (
 	"github.com/krbreyn/gemcat/browser"
 )
 
+func NeedsOneNum(args []string) (int, error) {
+	if len(args) == 0 {
+		return 0, errors.New("must include one number")
+	}
+
+	i, err := strconv.Atoi(args[0])
+	if err != nil {
+		return 0, errors.New("arg[0] not a number")
+	}
+	return i, nil
+}
+
+func NeedsTwoNums(args []string) (int, int, error) {
+	if len(args) != 2 {
+		return 0, 0, errors.New("must include two numbers")
+	}
+
+	i1, err := strconv.Atoi(args[0])
+	if err != nil {
+		return 0, 0, errors.New("item 1 is not a number")
+	}
+	i2, err := strconv.Atoi(args[1])
+	if err != nil {
+		return 0, 0, errors.New("item 2 is not a number")
+	}
+
+	return i1, i2, nil
+}
+
+func NormalizeRelativeLink(link string, b *browser.Browser) (string, error) {
+	if !strings.Contains(link, "://") && !strings.HasPrefix(link, "gemini://") {
+		if !strings.HasPrefix(link, "/") {
+			link = strings.TrimPrefix(b.S.CurrURL(), "/") + "/" + link
+		} else {
+			u, err := url.Parse(b.S.CurrURL())
+			if err != nil {
+				return "", err
+			}
+			u.Path = ""
+			link = strings.TrimPrefix(u.String(), "/") + link
+		}
+	}
+	return link, nil
+}
+
 type (
 	ExitCmd struct{}
 	TestCmd struct{}
@@ -38,13 +83,12 @@ type (
 	HistoryClearAllCmd struct{}
 	HistoryGotoCmd     struct{}
 
-	// TODO
-	BookmarkListCmd       struct{}
+	BookmarksCmd          struct{}
 	BookmarkRmCmd         struct{}
 	BookmarkAddLinkCmd    struct{}
 	BookmarkAddCurrentCmd struct{}
-	BookmarkClearAllCmd   struct{}
 	BookmarkSwapCmd       struct{}
+	BookmarkClearAllCmd   struct{}
 	BookmarkGotoCmd       struct{}
 
 	RefreshCmd      struct{} // TODO
@@ -146,13 +190,9 @@ func (_ BackCmd) Help() HelpInfo {
 
 // Links
 func (_ LinkCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
-	if len(args) == 0 {
-		return errors.New("must include link number")
-	}
-
-	i, err := strconv.Atoi(args[0])
+	i, err := NeedsOneNum(args)
 	if err != nil {
-		return errors.New("links are numbers")
+		return err
 	}
 
 	out.RecvMsg(b.S.CurrPage().Links[i].URL)
@@ -203,13 +243,9 @@ func (_ LinkCurrentCmd) Help() HelpInfo {
 }
 
 func (_ LinkGotoCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
-	if len(args) == 0 {
-		return errors.New("must include link number")
-	}
-
-	i, err := strconv.Atoi(args[0])
+	i, err := NeedsOneNum(args)
 	if err != nil {
-		return errors.New("links are numbers")
+		return err
 	}
 
 	p := b.S.CurrPage()
@@ -218,17 +254,9 @@ func (_ LinkGotoCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
 	}
 
 	link := p.Links[i].URL
-	if !strings.Contains(link, "://") && !strings.HasPrefix(link, "gemini://") {
-		if !strings.HasPrefix(link, "/") {
-			link = strings.TrimPrefix(b.S.CurrURL(), "/") + "/" + link
-		} else {
-			u, err := url.Parse(b.S.CurrURL())
-			if err != nil {
-				return err
-			}
-			u.Path = ""
-			link = strings.TrimPrefix(u.String(), "/") + link
-		}
+	link, err = NormalizeRelativeLink(link, b)
+	if err != nil {
+		return err
 	}
 
 	u, err := url.Parse(link)
@@ -245,6 +273,7 @@ func (_ LinkGotoCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
 	out.RecvPage(b.S.CurrPage())
 	return nil
 }
+
 func (_ LinkGotoCmd) Help() HelpInfo {
 	return HelpInfo{
 		Words: []string{"lgoto", "lgt"},
@@ -295,7 +324,7 @@ func (_ StackRmCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
 func (_ StackRmCmd) Help() HelpInfo {
 	return HelpInfo{
 		Words: []string{"strm"},
-		Desc:  "Remove the specified item from the stack.",
+		Desc:  "Remove the specified item from the stack.\n\tUsage: strm [i]",
 	}
 }
 
@@ -341,13 +370,9 @@ func (_ StackEmptyCmd) Help() HelpInfo {
 }
 
 func (_ StackGotoCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
-	if len(args) == 0 {
-		return errors.New("must include stack item number")
-	}
-
-	i, err := strconv.Atoi(args[0])
+	i, err := NeedsOneNum(args)
 	if err != nil {
-		return errors.New("not a number")
+		return err
 	}
 
 	if i < 0 || i > len(b.S.Stack)-1 {
@@ -361,7 +386,7 @@ func (_ StackGotoCmd) Do(b *browser.Browser, out ShellOut, args []string) error 
 func (_ StackGotoCmd) Help() HelpInfo {
 	return HelpInfo{
 		Words: []string{"stgt"},
-		Desc:  "Leap to the specified stack item number.",
+		Desc:  "Leap to the specified stack item number.\n\tUsage: stgt [i]",
 	}
 }
 
@@ -386,13 +411,9 @@ func (_ HistoryCmd) Help() HelpInfo {
 }
 
 func (_ HistoryRmCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
-	if len(args) == 0 {
-		return errors.New("must include history item number")
-	}
-
-	i, err := strconv.Atoi(args[0])
+	i, err := NeedsOneNum(args)
 	if err != nil {
-		return errors.New("not a number")
+		return err
 	}
 
 	if i < 0 || i > len(b.D.History)-1 {
@@ -407,7 +428,7 @@ func (_ HistoryRmCmd) Do(b *browser.Browser, out ShellOut, args []string) error 
 func (_ HistoryRmCmd) Help() HelpInfo {
 	return HelpInfo{
 		Words: []string{"hsrm"},
-		Desc:  "Remove an item from your history",
+		Desc:  "Remove an item from your history\n\tUsage: hsrm [i]",
 	}
 }
 
@@ -425,13 +446,9 @@ func (_ HistoryClearAllCmd) Help() HelpInfo {
 }
 
 func (_ HistoryGotoCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
-	if len(args) == 0 {
-		return errors.New("must include history item number")
-	}
-
-	i, err := strconv.Atoi(args[0])
+	i, err := NeedsOneNum(args)
 	if err != nil {
-		return errors.New("not a number!")
+		return err
 	}
 
 	if i < 0 || i > len(b.D.History)-1 {
@@ -453,11 +470,171 @@ func (_ HistoryGotoCmd) Do(b *browser.Browser, out ShellOut, args []string) erro
 func (_ HistoryGotoCmd) Help() HelpInfo {
 	return HelpInfo{
 		Words: []string{"hsgt"},
-		Desc:  "Open and goto and item in your history.",
+		Desc:  "Open and goto and item in your history.\n\tUsage:hsgt [i]",
 	}
 }
 
 // History End
+
+// Bookmarks
+func (_ BookmarksCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
+	if len(b.D.Bookmarks) == 0 {
+		return errors.New("bookmarks is empty")
+	}
+
+	for i, b := range b.D.Bookmarks {
+		out.RecvMsg(fmt.Sprintf("%d %s", i, b))
+	}
+	return nil
+}
+func (_ BookmarksCmd) Help() HelpInfo {
+	return HelpInfo{
+		Words: []string{"bml"},
+		Desc:  "List your bookmarks.",
+	}
+}
+
+func (_ BookmarkRmCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
+	i, err := NeedsOneNum(args)
+	if err != nil {
+		return err
+	}
+
+	if i < 0 || i > len(b.D.Bookmarks)-1 {
+		return errors.New("bookmark number is out of range")
+	}
+
+	removedURL := b.D.Bookmarks[i]
+	out.RecvMsg(fmt.Sprintf("deleting %s ...", removedURL))
+	b.D.Bookmarks = slices.Delete(b.D.Bookmarks, i, i+1)
+	return nil
+}
+func (_ BookmarkRmCmd) Help() HelpInfo {
+	return HelpInfo{
+		Words: []string{"bmrm"},
+		Desc:  "Removes a bookmark.\n\tUsage: bmrm [i]",
+	}
+}
+
+func (_ BookmarkAddLinkCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
+	i, err := NeedsOneNum(args)
+	if err != nil {
+		return err
+	}
+
+	p := b.S.CurrPage()
+	if i >= len(p.Links) || i < 0 {
+		return errors.New("invalid link number")
+	}
+
+	link := p.Links[i].URL
+	link, err = NormalizeRelativeLink(link, b)
+	if err != nil {
+		return err
+	}
+
+	if slices.Contains(b.D.Bookmarks, link) {
+		return errors.New("bookmarks already contains this url")
+	}
+
+	b.D.Bookmarks = append(b.D.Bookmarks, link)
+	out.RecvMsg(fmt.Sprintf("added %s to bookmarks", link))
+	return nil
+}
+func (_ BookmarkAddLinkCmd) Help() HelpInfo {
+	return HelpInfo{
+		Words: []string{"bmal"},
+		Desc:  "Add a link from the current page to your bookmarks.",
+	}
+}
+
+func (_ BookmarkAddCurrentCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
+	url := b.S.CurrURL()
+	if url == "" {
+		return errors.New("current page is empty")
+	}
+	if slices.Contains(b.D.Bookmarks, url) {
+		return errors.New("bookmarks already contains this url")
+	}
+	b.D.Bookmarks = append(b.D.Bookmarks, url)
+	out.RecvMsg(fmt.Sprintf("added %s to bookmarks", url))
+	return nil
+}
+func (_ BookmarkAddCurrentCmd) Help() HelpInfo {
+	return HelpInfo{
+		Words: []string{"bmac"},
+		Desc:  "Add the current page to your bookmarks.",
+	}
+}
+
+func (_ BookmarkSwapCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
+	i1, i2, err := NeedsTwoNums(args)
+	if err != nil {
+		return err
+	}
+	if i1 < 0 || i1 > len(b.D.Bookmarks)-1 {
+		return errors.New("bookmark number 1 is out of range")
+	}
+	if i2 < 0 || i2 > len(b.D.Bookmarks)-1 {
+		return errors.New("bookmark number 2 is out of range")
+	}
+
+	temp := b.D.Bookmarks[i1]
+	b.D.Bookmarks[i1] = b.D.Bookmarks[i2]
+	b.D.Bookmarks[i2] = temp
+	out.RecvMsg(fmt.Sprintf("swapped %d and %d", i1, i2))
+	return nil
+}
+func (_ BookmarkSwapCmd) Help() HelpInfo {
+	return HelpInfo{
+		Words: []string{"bmsw"},
+		Desc:  "Swap the places of two bookmark items\n\tUsage: bmsw [i1] [i2]",
+	}
+}
+
+func (_ BookmarkClearAllCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
+	l := len(b.D.Bookmarks)
+	b.D.Bookmarks = b.D.Bookmarks[:0]
+	out.RecvMsg(fmt.Sprintf("deleted %d bookmarks", l))
+	return nil
+}
+func (_ BookmarkClearAllCmd) Help() HelpInfo {
+	return HelpInfo{
+		Words: []string{"bmcla"},
+		Desc:  "Remove all items from your bookmarks.",
+	}
+}
+
+func (_ BookmarkGotoCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
+	i, err := NeedsOneNum(args)
+	if err != nil {
+		return err
+	}
+
+	if i < 0 || i > len(b.D.Bookmarks)-1 {
+		return errors.New("bookmark number is out of range")
+	}
+
+	u, err := url.Parse(b.D.Bookmarks[i])
+	if err != nil {
+		return err
+	}
+
+	err = b.GotoURL(u, true)
+	if err != nil {
+		return err
+	}
+	out.RecvPage(b.S.CurrPage())
+	return nil
+}
+func (_ BookmarkGotoCmd) Help() HelpInfo {
+	return HelpInfo{
+		Words: []string{"bmgt"},
+		Desc:  "Goto the specified bookmark numbers.\n\tUsage: bmgt [i]",
+	}
+}
+
+// Bookmarks End
 
 // Misc
 func (_ ReprintCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
