@@ -13,4 +13,4 @@ with, optionally, a URL following as the initial request. From there you can typ
 
 ![Demo Gif](https://raw.githubusercontent.com/krbreyn/gemcat/refs/heads/master/demo.gif)
 
-Thirdly, in the future, gemcat will also have a TUI powered by tcell that will have keyboard-navigation and full mouse support.
+Thirdly, in the future, gemcat will also have a TUI.
