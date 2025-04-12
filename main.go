@@ -58,23 +58,23 @@ func main() {
 	}
 
 	if !*cliMode && !*tuiMode {
-		if isURL {
-			_, body, err := browser.FetchGemini(u, true)
-			if err != nil {
-				die(err.Error())
-			}
-
-			width, _, err := term.GetSize(int(os.Stdout.Fd()))
-			if err != nil {
-				width = 80
-			}
-
-			fmt.Println(wordwrap.String(gemtxt.ColorPlain(body), width))
-			os.Exit(0)
-		} else {
+		if !isURL {
 			fmt.Println("err: must include URL if not using interactive mode")
 			os.Exit(1)
 		}
+
+		_, body, err := browser.FetchGemini(u, true)
+		if err != nil {
+			die(err.Error())
+		}
+
+		width, _, err := term.GetSize(int(os.Stdout.Fd()))
+		if err != nil {
+			width = 80
+		}
+
+		fmt.Println(wordwrap.String(gemtxt.ColorPlain(body), width))
+		os.Exit(0)
 	}
 
 	if *cliMode {
