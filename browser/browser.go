@@ -1,154 +1,148 @@
 package browser
 
 import (
-	"fmt"
+	"bufio"
 	"net/url"
-	"os"
 	"slices"
 	"strings"
-
-	"github.com/krbreyn/gemcat"
-	"github.com/krbreyn/gemcat/gemtext"
-	"github.com/muesli/reflow/wordwrap"
-	"golang.org/x/term"
 )
 
-func RenderPage(p gemcat.Page) string {
-	return gemtext.ColorGemtext(p.Content, p.Links)
-}
-
 type Browser struct {
-	State gemcat.BrowserState
-	Sh    Shell
+	S State
+	D Data
 }
 
-func NewBrowser() *Browser {
-	return &Browser{Sh: NewShell()}
+// TODO
+type Settings struct {
+	UseCache  bool
+	PageWidth bool
 }
 
-func (b *Browser) WasLinkVisited(url string) bool {
-	if !strings.HasPrefix(url, "gemini://") {
-		url = b.State.CurrURL + "/" + url
-	}
-	return slices.Contains(b.State.Data.History, url)
-}
+func (b *Browser) GotoURL(url *url.URL, doCache bool) error {
+	u := url.String()
 
-func (b *Browser) IsLinkBookmarked(url string) bool {
-	if !strings.HasPrefix(url, "gemini://") {
-		url = b.State.CurrURL + "/" + url
-	}
-	return slices.Contains(b.State.Data.Bookmarks, url)
-}
-
-func (b *Browser) GotoURLCache(url *url.URL) error {
-	if !slices.Contains(b.State.Data.History, url.String()) {
-		b.State.Data.History = append(b.State.Data.History, url.String())
+	if !slices.Contains(b.D.History, u) {
+		b.D.History = append(b.D.History, u)
 	}
 
 	_, body, err := FetchGemini(url, true)
 	if err != nil {
-		fmt.Printf("err: %v\n", err)
 		return err
 	}
 
-	b.State.CurrURL = url.String()
+	links := ParseLinks(body)
 
-	_, links := gemtext.DoLinks(body, b.WasLinkVisited, b.IsLinkBookmarked)
-
-	if len(b.State.Stack) != 0 {
-		b.State.Pos++
+	if len(b.S.Stack) != 0 {
+		b.S.Pos++
 	}
-	if b.State.Pos == len(b.State.Stack) {
-		b.State.Stack = append(b.State.Stack, gemcat.Page{
-			URL:     url.String(),
-			Content: body,
-			Links:   links,
-		})
+
+	p := Page{
+		URL:     u,
+		Content: body,
+		Links:   links,
+	}
+
+	if b.S.Pos == len(b.S.Stack) {
+		b.S.Stack = append(b.S.Stack, p)
 	} else {
-		b.State.Stack = append(b.State.Stack[:b.State.Pos], gemcat.Page{
-			URL:     url.String(),
-			Content: body,
-			Links:   links,
-		})
+		b.S.Stack = append(b.S.Stack[:b.S.Pos], p)
 	}
 
 	return nil
 }
 
-func (b *Browser) GotoURLNoCache(url *url.URL) error {
-	if !slices.Contains(b.State.Data.History, url.String()) {
-		b.State.Data.History = append(b.State.Data.History, url.String())
+type State struct {
+	Pos   int
+	Stack []Page
+}
+
+func (s *State) CurrPage() Page {
+	if len(s.Stack) == 0 || s.Pos > len(s.Stack)-1 {
+		return Page{
+			URL:     "",
+			Content: "",
+		}
 	}
+	return s.Stack[s.Pos]
+}
 
-	_, body, err := FetchGemini(url, false)
-	if err != nil {
-		fmt.Printf("err: %v\n", err)
-		return err
+func (s *State) CurrURL() string {
+	return s.CurrPage().URL
+}
+
+func (s *State) GoForward() {
+	if len(s.Stack) == 0 {
+		return
 	}
-
-	b.State.CurrURL = url.String()
-
-	_, links := gemtext.DoLinks(body, b.WasLinkVisited, b.IsLinkBookmarked)
-
-	if len(b.State.Stack) != 0 {
-		b.State.Pos++
+	if s.Pos < len(s.Stack)-1 {
+		s.Pos++
 	}
-	if b.State.Pos == len(b.State.Stack) {
-		b.State.Stack = append(b.State.Stack, gemcat.Page{
-			URL:     url.String(),
-			Content: body,
-			Links:   links,
-		})
-	} else {
-		b.State.Stack = append(b.State.Stack[:b.State.Pos], gemcat.Page{
-			URL:     url.String(),
-			Content: body,
-			Links:   links,
-		})
-	}
+}
 
+func (s *State) GoBack() {
+	if len(s.Stack) == 0 {
+		return
+	}
+	if s.Pos > 0 {
+		s.Pos--
+	}
+}
+
+// TODO
+func (s State) ToJson() []byte {
 	return nil
 }
 
-func (b *Browser) GetCurrPage() gemcat.Page {
-	return b.State.Stack[b.State.Pos]
+// TODO
+func StateFromJson(b []byte) (State, error) {
+	return State{}, nil
 }
 
-// TODO - don't wrap preformatted blocks?
-func (b *Browser) RenderOutput() string {
-	width, _, err := term.GetSize(int(os.Stdout.Fd()))
-	if err != nil {
-		width = 80
-	}
-	return wordwrap.String(b.RenderCurrPage(), width)
+type Data struct {
+	Bookmarks []string
+	History   []string
 }
 
-func (b *Browser) RenderCurrPage() string {
-	if len(b.State.Stack) == 0 {
-		return "You have no current page!"
-	}
-	p := b.GetCurrPage()
-	content, _ := gemtext.DoLinks(p.Content, b.WasLinkVisited, b.IsLinkBookmarked)
-	p.Content = content
-	return RenderPage(p)
+// TODO
+func (d Data) ToJson() []byte {
+	return nil
 }
 
-func (b *Browser) GoForward() {
-	if len(b.State.Stack) == 0 {
-		return
-	}
-	if b.State.Pos < len(b.State.Stack)-1 {
-		b.State.Pos++
-	}
-	b.State.CurrURL = b.GetCurrPage().URL
+// TODO
+func DataFromJson(b []byte) (Data, error) {
+	return Data{}, nil
 }
 
-func (b *Browser) GoBack() {
-	if len(b.State.Stack) == 0 {
-		return
+type Page struct {
+	URL     string
+	Content string
+	Links   []Link
+}
+
+type Link struct {
+	No  int
+	URL string
+}
+
+func ParseLinks(body string) []Link {
+	scanner := bufio.NewScanner(strings.NewReader(body))
+
+	var i int
+	var links []Link
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if strings.HasPrefix(line, "=>") {
+			split := strings.Fields(line)
+			url := split[1]
+
+			links = append(links, Link{
+				No:  i,
+				URL: url,
+			})
+		}
 	}
-	if b.State.Pos > 0 {
-		b.State.Pos--
-	}
-	b.State.CurrURL = b.GetCurrPage().URL
+
+	return links
 }

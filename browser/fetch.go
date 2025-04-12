@@ -25,23 +25,16 @@ ifRedirect:
 
 	host, path := url.Host, url.Path
 
-	// TODO fix whatever bug causes me to do this
-	host = strings.Replace(host, "//", "/", 1)
-
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: true,
-		VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
-			return tofu.HandleTOFU(rawCerts, host)
-		},
-	}
-
-	timeout := 7 * time.Second
-	dialer := &net.Dialer{
-		Timeout: timeout,
-	}
 	tlsDialer := &tls.Dialer{
-		NetDialer: dialer,
-		Config:    tlsConfig,
+		NetDialer: &net.Dialer{
+			Timeout: 7 * time.Second,
+		},
+		Config: &tls.Config{
+			InsecureSkipVerify: true,
+			VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+				return tofu.HandleTOFU(rawCerts, host)
+			},
+		},
 	}
 
 	if doCache {
@@ -55,15 +48,12 @@ ifRedirect:
 			if err != nil {
 				return "", "", fmt.Errorf("cache error: %w\n", err)
 			} else {
-				fmt.Println("cache hit")
+				// fmt.Println("cache hit")
 				return "20 [cache hit]", string(content), nil
 			}
-		} else {
-			fmt.Println("never seen/stale cache")
 		}
 	}
 
-	fmt.Printf("Connecting to gemini://%s/%s\r\n", host, path)
 	addr := net.JoinHostPort(host, "1965")
 	conn, err := tlsDialer.Dial("tcp", addr)
 	if err != nil {
@@ -81,20 +71,22 @@ ifRedirect:
 
 	status_no, err := strconv.Atoi(strings.Fields(status)[0])
 	if err != nil {
-		return "", "", fmt.Errorf("weird status err: %v", err)
+		return status, "", fmt.Errorf("weird status err: %v", err)
 	}
+
 	// TODO integrate this function with browser to update history properly
 	if status_no >= 30 && status_no <= 39 {
-		new_url, err := url.Parse(strings.Fields(status)[1])
+		url, err = url.Parse(strings.Fields(status)[1])
 		if err != nil {
-			return "", "", fmt.Errorf("redirect url parse error: %w", err)
+			return status, "", fmt.Errorf("redirect url parse error: %w", err)
 		}
-		fmt.Printf("Redirect: %s\r\n", new_url.String())
-
+		// TODO use an OutputObject?
+		// fmt.Printf("Redirect: %s\r\n", new_url.String())
 		goto ifRedirect
 	}
+
 	if status_no < 20 && status_no > 29 {
-		return "", "", fmt.Errorf("status was not 2x but was %d, status: %s", status_no, status)
+		return status, "", fmt.Errorf("status was not 2x but was %d", status_no)
 	}
 
 	var b strings.Builder

@@ -1,15 +1,12 @@
 package data
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/krbreyn/gemcat"
 )
 
 var xdg_data_home string = os.Getenv("XDG_DATA_HOME")
@@ -44,40 +41,21 @@ func getDataFile() string {
 	)
 }
 
-func LoadDataFile() (gemcat.BrowserState, error) {
-	var data gemcat.BrowserState
+func LoadDataFile() ([]byte, error) {
 	dataFile := getDataFile()
 
-	_, err := os.Stat(dataFile)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return data, nil
-		}
-		return data, fmt.Errorf("failed to stat data file: %w", err)
-	}
-
-	jsonBytes, err := os.ReadFile(dataFile)
+	data, err := os.ReadFile(dataFile)
 	if err != nil {
 		return data, fmt.Errorf("failed to read data file: %w", err)
-	}
-
-	err = json.Unmarshal(jsonBytes, &data)
-	if err != nil {
-		return data, fmt.Errorf("failed to unmarshal data: %w", err)
 	}
 
 	return data, nil
 }
 
-func SaveDataFile(data gemcat.BrowserState) error {
+func SaveDataFile(data []byte) error {
 	dataFile := getDataFile()
 
-	jsonBytes, err := json.MarshalIndent(data, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal data: %w", err)
-	}
-
-	err = os.WriteFile(dataFile, jsonBytes, 0644)
+	err := os.WriteFile(dataFile, data, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to write data file: %w", err)
 	}
