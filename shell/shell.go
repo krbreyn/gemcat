@@ -95,6 +95,11 @@ func makeCmdMap() (map[string]ShellCmd, []HelpInfo) {
 		StackCompressCmd{},
 		StackEmptyCmd{},
 		StackGotoCmd{},
+
+		HistoryCmd{},
+		HistoryRmCmd{},
+		HistoryClearAllCmd{},
+		HistoryGotoCmd{},
 	}
 	var help []HelpInfo
 

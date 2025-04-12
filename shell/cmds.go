@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -32,7 +33,6 @@ type (
 	StackEmptyCmd    struct{}
 	StackGotoCmd     struct{}
 
-	// TODO
 	HistoryCmd         struct{}
 	HistoryRmCmd       struct{}
 	HistoryClearAllCmd struct{}
@@ -347,7 +347,7 @@ func (_ StackGotoCmd) Do(b *browser.Browser, out ShellOut, args []string) error 
 
 	i, err := strconv.Atoi(args[0])
 	if err != nil {
-		return errors.New("not a number!")
+		return errors.New("not a number")
 	}
 
 	if i < 0 || i > len(b.S.Stack)-1 {
@@ -366,6 +366,98 @@ func (_ StackGotoCmd) Help() HelpInfo {
 }
 
 // Stack End
+
+// History
+func (_ HistoryCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
+	if len(b.D.History) == 0 {
+		return errors.New("history is empty")
+	}
+
+	for i, h := range b.D.History {
+		out.RecvMsg(fmt.Sprintf("%d %s", i, h))
+	}
+	return nil
+}
+func (_ HistoryCmd) Help() HelpInfo {
+	return HelpInfo{
+		Words: []string{"hs"},
+		Desc:  "Print the history of visited pages.",
+	}
+}
+
+func (_ HistoryRmCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
+	if len(args) == 0 {
+		return errors.New("must include history item number")
+	}
+
+	i, err := strconv.Atoi(args[0])
+	if err != nil {
+		return errors.New("not a number")
+	}
+
+	if i < 0 || i > len(b.D.History)-1 {
+		return errors.New("history item number is out of range")
+	}
+
+	removedURL := b.D.History[i]
+	out.RecvMsg(fmt.Sprintf("deleting %s...", removedURL))
+	b.D.History = slices.Delete(b.D.History, i, i+1)
+	return nil
+}
+func (_ HistoryRmCmd) Help() HelpInfo {
+	return HelpInfo{
+		Words: []string{"hsrm"},
+		Desc:  "Remove an item from your history",
+	}
+}
+
+func (_ HistoryClearAllCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
+	l := len(b.D.History)
+	b.D.History = b.D.History[:0]
+	out.RecvMsg(fmt.Sprintf("deleted %d bookmarks", l))
+	return nil
+}
+func (_ HistoryClearAllCmd) Help() HelpInfo {
+	return HelpInfo{
+		Words: []string{"hscla"},
+		Desc:  "Clear your history.",
+	}
+}
+
+func (_ HistoryGotoCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
+	if len(args) == 0 {
+		return errors.New("must include history item number")
+	}
+
+	i, err := strconv.Atoi(args[0])
+	if err != nil {
+		return errors.New("not a number!")
+	}
+
+	if i < 0 || i > len(b.D.History)-1 {
+		return errors.New("history item number is out of range")
+	}
+
+	u, err := url.Parse(b.D.History[i])
+	if err != nil {
+		return err
+	}
+	err = b.GotoURL(u, true)
+	if err != nil {
+		return err
+	}
+
+	out.RecvPage(b.S.CurrPage())
+	return nil
+}
+func (_ HistoryGotoCmd) Help() HelpInfo {
+	return HelpInfo{
+		Words: []string{"hsgt"},
+		Desc:  "Open and goto and item in your history.",
+	}
+}
+
+// History End
 
 // Misc
 func (_ ReprintCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
