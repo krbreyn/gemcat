@@ -41,20 +41,17 @@ type (
 	// TODO
 	BookmarkListCmd       struct{}
 	BookmarkRmCmd         struct{}
-	BookmarkRmCurrent     struct{}
 	BookmarkAddLinkCmd    struct{}
 	BookmarkAddCurrentCmd struct{}
 	BookmarkClearAllCmd   struct{}
 	BookmarkSwapCmd       struct{}
 	BookmarkGotoCmd       struct{}
 
-	RefreshCmd      struct{}
+	RefreshCmd      struct{} // TODO
 	ReprintCmd      struct{}
 	CloseCurrentCmd struct{} // TODO
 	CacheListCmd    struct{} // TODO
-	LessCmd         struct{}
 	JustCatCmd      struct{} // TODO
-	JustCatLessCmd  struct{} // TODO
 )
 
 func (_ ExitCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
@@ -369,3 +366,17 @@ func (_ StackGotoCmd) Help() HelpInfo {
 }
 
 // Stack End
+
+// Misc
+func (_ ReprintCmd) Do(b *browser.Browser, out ShellOut, args []string) error {
+	out.RecvPage(b.S.CurrPage())
+	return nil
+}
+func (_ ReprintCmd) Help() HelpInfo {
+	return HelpInfo{
+		Words: []string{"reprint", "rp"},
+		Desc:  "Reprint the current page's contents.",
+	}
+}
+
+// Misc End
